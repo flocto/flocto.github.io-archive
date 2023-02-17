@@ -1,4 +1,4 @@
-baseURL = 'http:/flocto.github.io/'
+baseURL = '/'
 languageCode = 'en-us'
 title = 'ffffffflocto'
 theme = "nightfall-edited" 
