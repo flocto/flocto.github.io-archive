@@ -1,0 +1,39 @@
+baseURL = 'http:/flocto.github.io/'
+languageCode = 'en-us'
+title = 'ffffffflocto'
+theme = "nightfall-starry" 
+enableEmoji=true
+[params]
+    author = "flocto"
+    user = "fl"
+    hostname = "cto"
+    [[params.social]]
+        key = 0
+        name = "github"
+        url = "https://github.com/flocto"
+    [[params.social]]
+        key = 1
+        name = "twitter"
+        url = "https://twitter.com/fl0ct0"
+    [[params.social]]
+        key = 2
+        name = "email"
+        url = "mailto:flocto@duck.com"
+
+[menu]
+  [[menu.header]]
+    name = "about"
+    weight = 1
+    url = "/about"
+  [[menu.header]]
+    name = "projects"
+    weight = 2
+    url = "/projects"
+  [[menu.header]]
+    name = "writeups"
+    weight = 2
+    url = "/writeups"
+  [[menu.header]]
+    name = "blog"
+    weight = 0
+    url = "/blog"
