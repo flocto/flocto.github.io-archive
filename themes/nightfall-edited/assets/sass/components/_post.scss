@@ -1,0 +1,63 @@
+@import "../utils/variables";
+
+.postDate {
+  float: right;
+  color: $white;
+}
+
+.postTitle {
+  color: $lightblue;
+  text-decoration: none;
+  text-transform: capitalize;
+  font-family: $fontHeader;
+  font-size: 1.2em;
+  float: left;
+  transition: color 0.2s ease-in-out;
+}
+
+.postListItem:hover .postTitle {
+  color: $blue;
+}
+
+.postHeader {
+  overflow: hidden;
+}
+
+.postsList {
+  margin-top: 20px;
+}
+
+.postListItem {
+  padding: 20px;
+  background-color: $black;
+  margin-bottom: 20px;
+  border-radius: 5px;
+  transition: scale 0.2s ease-in-out;
+}
+
+.postListItem:hover {
+  scale: 1.01;
+}
+
+.postExcerpt {
+  text-align: initial;
+  text-decoration: none;
+  color: $white;
+}
+
+.headerContainer {
+  display: flex;
+  justify-content: space-between;
+}
+
+.noDecoration {
+  text-decoration: none;
+}
+
+a,
+a:link,
+a:visited,
+a:hover,
+a:active{
+  text-decoration: none;
+}

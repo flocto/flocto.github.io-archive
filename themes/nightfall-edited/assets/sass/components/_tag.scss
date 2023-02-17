@@ -1,0 +1,27 @@
+@import "../utils/variables";
+
+.tagList {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    align-items: center;
+    justify-content: center;
+    display: flex;
+}
+
+.tagItem {
+    background-color: $backgroundLighter;
+    border-radius: 0.5rem;
+    padding: 0.5rem;
+    margin: 0 0.5rem 0 0.5rem;
+    display: inline-block;
+}
+
+.tagLink {
+    font-weight: bold;
+    color: $lightblue;
+}
+
+.tagLink:visited{
+    color: $lightblue; // don't color visited tags
+}

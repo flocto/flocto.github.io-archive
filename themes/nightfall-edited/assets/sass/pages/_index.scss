@@ -1,0 +1,17 @@
+.indexWrapper {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+.indexHeader {
+    font-size: 3em;
+}
+
+.indexImage {
+    width: 100px;
+    height: 100px;
+    object-fit: cover;
+    margin: auto;
+    border-radius: 15px;
+}

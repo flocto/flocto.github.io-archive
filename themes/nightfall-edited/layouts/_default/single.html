@@ -1,0 +1,14 @@
+{{ define "title"}}
+{{ .Title }} | {{ .Site.Params.author }}
+{{ end }}
+
+
+{{ define "main" }}
+<div class="postWrapper">
+    <h1>{{ .Title }}</h1>
+    {{ partial "tags.html" .}}
+    <div>
+        {{ .Content }}
+    </div>
+</div>
+{{ end }}
