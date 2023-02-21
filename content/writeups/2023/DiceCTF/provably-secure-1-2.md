@@ -95,7 +95,7 @@ D(E_1(r_2), E_2(r_1 \oplus m_{b1}))
 = r_1 \oplus r_2 \oplus m_{b1}
 $$
 
-Notice that is `m_b1` and `m_b2` are the same, then `r_1 \oplus r_2 \oplus m_b1` is the same as `r_1 \oplus r_2 \oplus m_b2`.
+Notice that if `m_b1` and `m_b2` are the same, then `r_1 \oplus r_2 \oplus m_b1` is the same as `r_1 \oplus r_2 \oplus m_b2`.
 
 So all we have to do is vary one message, and recover `m_bit` based on whether the swapped decryption changes or not.
 
