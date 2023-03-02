@@ -68,6 +68,11 @@ code.has-jax {
   }
 }
 
+img {
+  max-width: 100%;
+  height: auto;
+}
+
 @-ms-viewport{
   width: device-width;
 }
