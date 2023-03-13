@@ -347,10 +347,18 @@ The author unfortunately forgot that `solution` and `password` were both in the 
 ```py
 __import__("__main__").solution # for 0-2
 ```
+Passwords were:
+```
+Level 0: PuXqj7n4WNZzStnWbtPv
+Level 1: Krdi9yQuY8mHoteZDCF5
+Level 2: E46Dnqb5enAMgGArbruu
+Level 3: 5F4p7aLgQ5Nfn5YM8s68
+```
 The last challenge, challenge 3, removed `__builtins__`, so we couldn't use import. Fortunately the old `().__class__.__bases__[0].__subclasses__()` trick still works.
 ```py
 ().__class__.__base__.__subclasses__()[84]().load_module('__main__').solution # for 3
 ```
+`utflag{LGvb7PJXG5JDwhsEW7xp}`
 
 [Back to TOC](#toc)
 
