@@ -1,0 +1,974 @@
+<!doctype html><html lang=en-us><head><title>Breaking Java Random - BucketCTF 2023 Writeup | flocto</title><meta charset=utf-8><meta name=viewport content="width=device-width,initial-scale=1"><meta name=generator content="Hugo 0.111.3"><link rel=canonical href=/writeups/2023/bucketctf/breaking-java-random/><link href=/sass/main.min.d5c6372979b097424e8b365d186ee2c4414af12738b1673ef13ae623846a4b06.css rel=stylesheet></head><body><div class=flexWrapper><header class=headerWrapper><div class=header><div><a href=/><span class=terminal>fl@cto ~ $</span></a></div><nav class=headerLinks><ul><li><a href=/about title>~/about</a></li><li><a href=/projects title>~/projects</a></li><li><a href=/writeups title>~/writeups</a></li><li><a href=/blog title>~/blog</a></li><li><a href=/ style=align-items:center;justify-content:center><img style=width:30px;height:30px;border-radius:15px;vertical-align:text-bottom src=/profile.png alt=Home></a></li></ul></nav></div></header><div class=content><main class=main><div class=postWrapper><h1>Breaking Java Random - BucketCTF 2023 Writeup</h1><ul class=tagList><li class=tagItem><a class=tagLink href=/tags/rev/>rev</a></li><li class=tagItem><a class=tagLink href=/tags/bucketctf/>bucketctf</a></li><li class=tagItem><a class=tagLink href=/tags/2023/>2023</a></li></ul><div><p>The promised reverse engineering writeup is finally here. This post will feature 3 challenges: <code>random security</code>, <code>maze</code>, and <code>image</code>.
+While <code>image</code> is categorized as <code>crypto</code>, I feel like that&rsquo;s a gross misrepresentation of the challenge, so I&rsquo;m putting all 3 as rev.</p><p>Let&rsquo;s start out with the most basic challenge: <code>random security</code>.</p><h2 id=random-security---452---medium>Random Security - 452 - Medium</h2><blockquote><p>One of my <em>friends</em> recently learned <strong>Java</strong> and started teasing all of us for not knowing anything about programming. He made what he called a <em>secure</em> program and challenged us to steal some flag from it. I have no idea where to even start, could you help out?</p></blockquote><p>We&rsquo;re not given any source, so let&rsquo;s just connect to the server and see what we get.</p><pre tabindex=0><code class=language-terminal data-lang=terminal>$ nc 213.133.103.186 32811
+Since I am nice I will give you a random number:
+0.1406976754934386
+Now give me one!
+123
+WRONG DOUBLE!!!!!
+</code></pre><p>Seems like we have to generate another random number and send it back. Given the flavortext of the challenge and the server messages, we probably have the generate the result of the <code>nextDouble</code> method of the <code>Random</code> class.</p><p>The server seems to be giving us a single output of <code>nextDouble</code> as well, so somehow we need to recover the random seed from that, and then generate the next double for the server.</p><p>Let&rsquo;s take a look at the relevant source code for <code>Random</code>:</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-java data-lang=java><span style=display:flex><span><span style=color:#66d9ef>public</span> <span style=color:#66d9ef>class</span> <span style=color:#a6e22e>Random</span> <span style=color:#f92672>{</span>
+</span></span><span style=display:flex><span>    <span style=color:#66d9ef>private</span> <span style=color:#66d9ef>final</span> AtomicLong seed<span style=color:#f92672>;</span>
+</span></span><span style=display:flex><span>    <span style=color:#66d9ef>private</span> <span style=color:#66d9ef>static</span> <span style=color:#66d9ef>final</span> <span style=color:#66d9ef>long</span> multiplier <span style=color:#f92672>=</span> <span style=color:#ae81ff>0x5DEECE66DL</span><span style=color:#f92672>;</span>
+</span></span><span style=display:flex><span>    <span style=color:#66d9ef>private</span> <span style=color:#66d9ef>static</span> <span style=color:#66d9ef>final</span> <span style=color:#66d9ef>long</span> addend <span style=color:#f92672>=</span> <span style=color:#ae81ff>0xBL</span><span style=color:#f92672>;</span>
+</span></span><span style=display:flex><span>    <span style=color:#66d9ef>private</span> <span style=color:#66d9ef>static</span> <span style=color:#66d9ef>final</span> <span style=color:#66d9ef>long</span> mask <span style=color:#f92672>=</span> <span style=color:#f92672>(</span><span style=color:#ae81ff>1L</span> <span style=color:#f92672>&lt;&lt;</span> <span style=color:#ae81ff>48</span><span style=color:#f92672>)</span> <span style=color:#f92672>-</span> <span style=color:#ae81ff>1</span><span style=color:#f92672>;</span>
+</span></span><span style=display:flex><span>    <span style=color:#75715e>/* ... */</span>
+</span></span><span style=display:flex><span>    <span style=color:#66d9ef>protected</span> <span style=color:#66d9ef>int</span> <span style=color:#a6e22e>next</span><span style=color:#f92672>(</span><span style=color:#66d9ef>int</span> bits<span style=color:#f92672>)</span> <span style=color:#f92672>{</span>
+</span></span><span style=display:flex><span>        <span style=color:#66d9ef>long</span> oldseed<span style=color:#f92672>,</span> nextseed<span style=color:#f92672>;</span>
+</span></span><span style=display:flex><span>        AtomicLong seed <span style=color:#f92672>=</span> <span style=color:#66d9ef>this</span><span style=color:#f92672>.</span><span style=color:#a6e22e>seed</span><span style=color:#f92672>;</span>
+</span></span><span style=display:flex><span>        <span style=color:#66d9ef>do</span> <span style=color:#f92672>{</span>
+</span></span><span style=display:flex><span>            oldseed <span style=color:#f92672>=</span> seed<span style=color:#f92672>.</span><span style=color:#a6e22e>get</span><span style=color:#f92672>();</span>
+</span></span><span style=display:flex><span>            nextseed <span style=color:#f92672>=</span> <span style=color:#f92672>(</span>oldseed <span style=color:#f92672>*</span> multiplier <span style=color:#f92672>+</span> addend<span style=color:#f92672>)</span> <span style=color:#f92672>&amp;</span> mask<span style=color:#f92672>;</span>
+</span></span><span style=display:flex><span>        <span style=color:#f92672>}</span> <span style=color:#66d9ef>while</span> <span style=color:#f92672>(!</span>seed<span style=color:#f92672>.</span><span style=color:#a6e22e>compareAndSet</span><span style=color:#f92672>(</span>oldseed<span style=color:#f92672>,</span> nextseed<span style=color:#f92672>));</span>
+</span></span><span style=display:flex><span>        <span style=color:#66d9ef>return</span> <span style=color:#f92672>(</span><span style=color:#66d9ef>int</span><span style=color:#f92672>)(</span>nextseed <span style=color:#f92672>&gt;&gt;&gt;</span> <span style=color:#f92672>(</span><span style=color:#ae81ff>48</span> <span style=color:#f92672>-</span> bits<span style=color:#f92672>));</span>
+</span></span><span style=display:flex><span>    <span style=color:#f92672>}</span>
+</span></span><span style=display:flex><span>    <span style=color:#75715e>/* ... */</span>
+</span></span><span style=display:flex><span>    <span style=color:#66d9ef>private</span> <span style=color:#66d9ef>static</span> <span style=color:#66d9ef>final</span> <span style=color:#66d9ef>double</span> DOUBLE_UNIT <span style=color:#f92672>=</span> <span style=color:#ae81ff>0x1.0p-53</span><span style=color:#f92672>;</span> <span style=color:#75715e>// 1.0 / (1L &lt;&lt; 53)
+</span></span></span><span style=display:flex><span><span style=color:#75715e></span>    <span style=color:#66d9ef>public</span> <span style=color:#66d9ef>double</span> <span style=color:#a6e22e>nextDouble</span><span style=color:#f92672>()</span> <span style=color:#f92672>{</span>
+</span></span><span style=display:flex><span>        <span style=color:#66d9ef>return</span> <span style=color:#f92672>(((</span><span style=color:#66d9ef>long</span><span style=color:#f92672>)(</span>next<span style=color:#f92672>(</span><span style=color:#ae81ff>26</span><span style=color:#f92672>))</span> <span style=color:#f92672>&lt;&lt;</span> <span style=color:#ae81ff>27</span><span style=color:#f92672>)</span> <span style=color:#f92672>+</span> next<span style=color:#f92672>(</span><span style=color:#ae81ff>27</span><span style=color:#f92672>))</span> <span style=color:#f92672>*</span> DOUBLE_UNIT<span style=color:#f92672>;</span>
+</span></span><span style=display:flex><span>    <span style=color:#f92672>}</span>
+</span></span><span style=display:flex><span><span style=color:#f92672>}</span>
+</span></span></code></pre></div><p>The <code>next</code> method is the core of the RNG, and it&rsquo;s pretty simple. It&rsquo;s just a linear congruential generator (LCG) with a 48-bit modulus.
+The values of <code>multiplier</code>, <code>addend</code>, and <code>mask</code> are all constants, so we can just hardcode them if needed.</p><p>To generate a double like the server is doing, there are 2 calls being made to <code>next</code>. This means that we are able to extract the top 26 bits from the first <code>next</code> call, and the top 27 bits from the second <code>next</code> call.</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-python data-lang=python><span style=display:flex><span>double <span style=color:#f92672>=</span> <span style=color:#ae81ff>0.1406976754934386</span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>state <span style=color:#f92672>=</span> double <span style=color:#f92672>*</span> (<span style=color:#ae81ff>1</span> <span style=color:#f92672>&lt;&lt;</span> <span style=color:#ae81ff>53</span>)
+</span></span><span style=display:flex><span>state <span style=color:#f92672>=</span> int(state)
+</span></span><span style=display:flex><span>print(state)
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>first26 <span style=color:#f92672>=</span> state <span style=color:#f92672>&gt;&gt;</span> <span style=color:#ae81ff>27</span>
+</span></span><span style=display:flex><span>second27 <span style=color:#f92672>=</span> state <span style=color:#f92672>&amp;</span> ((<span style=color:#ae81ff>1</span> <span style=color:#f92672>&lt;&lt;</span> <span style=color:#ae81ff>27</span>) <span style=color:#f92672>-</span> <span style=color:#ae81ff>1</span>)
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>print(bin(first26)[<span style=color:#ae81ff>2</span>:]<span style=color:#f92672>.</span>zfill(<span style=color:#ae81ff>26</span>), bin(second27)[<span style=color:#ae81ff>2</span>:]<span style=color:#f92672>.</span>zfill(<span style=color:#ae81ff>27</span>))
+</span></span><span style=display:flex><span><span style=color:#75715e># 1267291997848290</span>
+</span></span><span style=display:flex><span><span style=color:#75715e># 00100100000001001100001101 001010110111100001011100010</span>
+</span></span></code></pre></div><p>However, this still isn&rsquo;t enough to completely predict all the outputs. We still don&rsquo;t know the full value of <code>seed</code>.</p><p>Thankfully, because we&rsquo;re given the top <code>26</code> bits of the state before the second <code>next</code> call, we can easily brute force the remaining <code>48 - 26 = 22</code> bits.
+To verify, <code>2 ^ 22 = 4194304</code>, which is tiny in terms of brute forcing.</p><p>To save time, I just directly ported over the algorithm listed <a href=https://franklinta.com/2014/08/31/predicting-the-next-math-random-in-java/>here</a> into Python, and it worked perfectly.</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-python data-lang=python><span style=display:flex><span>double <span style=color:#f92672>=</span> <span style=color:#ae81ff>0.1406976754934386</span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>state <span style=color:#f92672>=</span> double <span style=color:#f92672>*</span> (<span style=color:#ae81ff>1</span> <span style=color:#f92672>&lt;&lt;</span> <span style=color:#ae81ff>53</span>)
+</span></span><span style=display:flex><span>state <span style=color:#f92672>=</span> int(state)
+</span></span><span style=display:flex><span>print(state)
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>first26 <span style=color:#f92672>=</span> state <span style=color:#f92672>&gt;&gt;</span> <span style=color:#ae81ff>27</span>
+</span></span><span style=display:flex><span>second27 <span style=color:#f92672>=</span> state <span style=color:#f92672>&amp;</span> ((<span style=color:#ae81ff>1</span> <span style=color:#f92672>&lt;&lt;</span> <span style=color:#ae81ff>27</span>) <span style=color:#f92672>-</span> <span style=color:#ae81ff>1</span>)
+</span></span><span style=display:flex><span>print(bin(first26)[<span style=color:#ae81ff>2</span>:]<span style=color:#f92672>.</span>zfill(<span style=color:#ae81ff>26</span>), bin(second27)[<span style=color:#ae81ff>2</span>:]<span style=color:#f92672>.</span>zfill(<span style=color:#ae81ff>27</span>))
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>multiplier <span style=color:#f92672>=</span> <span style=color:#ae81ff>0x5DEECE66D</span>
+</span></span><span style=display:flex><span>addend <span style=color:#f92672>=</span> <span style=color:#ae81ff>0xB</span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>mask <span style=color:#f92672>=</span> ((<span style=color:#ae81ff>1</span><span style=color:#f92672>&lt;&lt;</span><span style=color:#ae81ff>27</span>)<span style=color:#f92672>-</span><span style=color:#ae81ff>1</span>) <span style=color:#f92672>&lt;&lt;</span> (<span style=color:#ae81ff>48</span> <span style=color:#f92672>-</span> <span style=color:#ae81ff>27</span>)
+</span></span><span style=display:flex><span>oldseedupper26 <span style=color:#f92672>=</span> first26 <span style=color:#f92672>&lt;&lt;</span> (<span style=color:#ae81ff>48</span> <span style=color:#f92672>-</span> <span style=color:#ae81ff>26</span>) <span style=color:#f92672>&amp;</span> mask
+</span></span><span style=display:flex><span>newseedupper27 <span style=color:#f92672>=</span> second27 <span style=color:#f92672>&lt;&lt;</span> (<span style=color:#ae81ff>48</span> <span style=color:#f92672>-</span> <span style=color:#ae81ff>27</span>) <span style=color:#f92672>&amp;</span> mask
+</span></span><span style=display:flex><span>possibleSeeds <span style=color:#f92672>=</span> []
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#f92672>from</span> tqdm <span style=color:#f92672>import</span> tqdm
+</span></span><span style=display:flex><span><span style=color:#66d9ef>for</span> oldseed <span style=color:#f92672>in</span> tqdm(range(oldseedupper26, oldseedupper26 <span style=color:#f92672>+</span> ((<span style=color:#ae81ff>1</span> <span style=color:#f92672>&lt;&lt;</span> (<span style=color:#ae81ff>48</span> <span style=color:#f92672>-</span> <span style=color:#ae81ff>26</span>))))):
+</span></span><span style=display:flex><span>    newseed <span style=color:#f92672>=</span> oldseed <span style=color:#f92672>*</span> multiplier <span style=color:#f92672>+</span> addend
+</span></span><span style=display:flex><span>    newseed <span style=color:#f92672>=</span> newseed <span style=color:#f92672>&amp;</span> ((<span style=color:#ae81ff>1</span> <span style=color:#f92672>&lt;&lt;</span> <span style=color:#ae81ff>48</span>) <span style=color:#f92672>-</span> <span style=color:#ae81ff>1</span>)
+</span></span><span style=display:flex><span>    <span style=color:#66d9ef>if</span> newseed <span style=color:#f92672>&amp;</span> mask <span style=color:#f92672>==</span> newseedupper27:
+</span></span><span style=display:flex><span>        possibleSeeds<span style=color:#f92672>.</span>append(oldseed)
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>print(possibleSeeds)
+</span></span><span style=display:flex><span><span style=color:#66d9ef>if</span> len(possibleSeeds) <span style=color:#f92672>!=</span> <span style=color:#ae81ff>1</span>:
+</span></span><span style=display:flex><span>    print(<span style=color:#e6db74>&#39;Error&#39;</span>)
+</span></span><span style=display:flex><span>    exit(<span style=color:#ae81ff>1</span>)
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>seed <span style=color:#f92672>=</span> possibleSeeds[<span style=color:#ae81ff>0</span>]
+</span></span><span style=display:flex><span><span style=color:#75715e># seed = 39602878128263</span>
+</span></span></code></pre></div><p>Now all we have to do is reimplement the <code>next</code> and <code>nextDouble</code> methods.</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-python data-lang=python><span style=display:flex><span><span style=color:#66d9ef>def</span> <span style=color:#a6e22e>next</span>(bits):
+</span></span><span style=display:flex><span>    <span style=color:#66d9ef>global</span> seed
+</span></span><span style=display:flex><span>    seed <span style=color:#f92672>=</span> (seed <span style=color:#f92672>*</span> multiplier <span style=color:#f92672>+</span> addend) <span style=color:#f92672>&amp;</span> ((<span style=color:#ae81ff>1</span> <span style=color:#f92672>&lt;&lt;</span> <span style=color:#ae81ff>48</span>) <span style=color:#f92672>-</span> <span style=color:#ae81ff>1</span>)
+</span></span><span style=display:flex><span>    <span style=color:#66d9ef>return</span> seed <span style=color:#f92672>&gt;&gt;</span> (<span style=color:#ae81ff>48</span> <span style=color:#f92672>-</span> bits)
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#66d9ef>def</span> <span style=color:#a6e22e>nextDouble</span>():
+</span></span><span style=display:flex><span>    <span style=color:#66d9ef>return</span> ((next(<span style=color:#ae81ff>26</span>) <span style=color:#f92672>&lt;&lt;</span> <span style=color:#ae81ff>27</span>) <span style=color:#f92672>+</span> next(<span style=color:#ae81ff>27</span>)) <span style=color:#f92672>/</span> (<span style=color:#ae81ff>1</span> <span style=color:#f92672>&lt;&lt;</span> <span style=color:#ae81ff>53</span>)
+</span></span></code></pre></div><p>Finally, we can send the next generated double back to the server and finally get the flag. Before we generate the next double though, we do have to make
+a single <code>next</code> call, as the seed we recovered is the seed after the first <code>next</code> call in the <code>nextDouble</code> method, so we still need to go through the second one.</p><p>Here&rsquo;s the full script:</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-python data-lang=python><span style=display:flex><span><span style=color:#f92672>from</span> pwn <span style=color:#f92672>import</span> remote
+</span></span><span style=display:flex><span><span style=color:#f92672>from</span> tqdm <span style=color:#f92672>import</span> tqdm
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>r <span style=color:#f92672>=</span> remote(<span style=color:#e6db74>&#39;213.133.103.186&#39;</span>, <span style=color:#ae81ff>32815</span>, level<span style=color:#f92672>=</span><span style=color:#e6db74>&#39;error&#39;</span>)
+</span></span><span style=display:flex><span>r<span style=color:#f92672>.</span>recvline()
+</span></span><span style=display:flex><span>double <span style=color:#f92672>=</span> float(r<span style=color:#f92672>.</span>recvline()<span style=color:#f92672>.</span>decode()<span style=color:#f92672>.</span>strip())
+</span></span><span style=display:flex><span>print(double)
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>state <span style=color:#f92672>=</span> double <span style=color:#f92672>*</span> (<span style=color:#ae81ff>1</span> <span style=color:#f92672>&lt;&lt;</span> <span style=color:#ae81ff>53</span>)
+</span></span><span style=display:flex><span>state <span style=color:#f92672>=</span> int(state)
+</span></span><span style=display:flex><span>print(state)
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>first26 <span style=color:#f92672>=</span> state <span style=color:#f92672>&gt;&gt;</span> <span style=color:#ae81ff>27</span>
+</span></span><span style=display:flex><span>second27 <span style=color:#f92672>=</span> state <span style=color:#f92672>&amp;</span> ((<span style=color:#ae81ff>1</span> <span style=color:#f92672>&lt;&lt;</span> <span style=color:#ae81ff>27</span>) <span style=color:#f92672>-</span> <span style=color:#ae81ff>1</span>)
+</span></span><span style=display:flex><span>print(bin(first26)[<span style=color:#ae81ff>2</span>:]<span style=color:#f92672>.</span>zfill(<span style=color:#ae81ff>26</span>), bin(second27)[<span style=color:#ae81ff>2</span>:]<span style=color:#f92672>.</span>zfill(<span style=color:#ae81ff>27</span>))
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>multiplier <span style=color:#f92672>=</span> <span style=color:#ae81ff>0x5DEECE66D</span>
+</span></span><span style=display:flex><span>addend <span style=color:#f92672>=</span> <span style=color:#ae81ff>0xB</span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>mask <span style=color:#f92672>=</span> ((<span style=color:#ae81ff>1</span><span style=color:#f92672>&lt;&lt;</span><span style=color:#ae81ff>27</span>)<span style=color:#f92672>-</span><span style=color:#ae81ff>1</span>) <span style=color:#f92672>&lt;&lt;</span> (<span style=color:#ae81ff>48</span> <span style=color:#f92672>-</span> <span style=color:#ae81ff>27</span>)
+</span></span><span style=display:flex><span>oldseedupper26 <span style=color:#f92672>=</span> first26 <span style=color:#f92672>&lt;&lt;</span> (<span style=color:#ae81ff>48</span> <span style=color:#f92672>-</span> <span style=color:#ae81ff>26</span>) <span style=color:#f92672>&amp;</span> mask
+</span></span><span style=display:flex><span>newseedupper27 <span style=color:#f92672>=</span> second27 <span style=color:#f92672>&lt;&lt;</span> (<span style=color:#ae81ff>48</span> <span style=color:#f92672>-</span> <span style=color:#ae81ff>27</span>) <span style=color:#f92672>&amp;</span> mask
+</span></span><span style=display:flex><span>possibleSeeds <span style=color:#f92672>=</span> []
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#f92672>from</span> tqdm <span style=color:#f92672>import</span> tqdm
+</span></span><span style=display:flex><span><span style=color:#66d9ef>for</span> oldseed <span style=color:#f92672>in</span> tqdm(range(oldseedupper26, oldseedupper26 <span style=color:#f92672>+</span> ((<span style=color:#ae81ff>1</span> <span style=color:#f92672>&lt;&lt;</span> (<span style=color:#ae81ff>48</span> <span style=color:#f92672>-</span> <span style=color:#ae81ff>26</span>))))):
+</span></span><span style=display:flex><span>    newseed <span style=color:#f92672>=</span> oldseed <span style=color:#f92672>*</span> multiplier <span style=color:#f92672>+</span> addend
+</span></span><span style=display:flex><span>    newseed <span style=color:#f92672>=</span> newseed <span style=color:#f92672>&amp;</span> ((<span style=color:#ae81ff>1</span> <span style=color:#f92672>&lt;&lt;</span> <span style=color:#ae81ff>48</span>) <span style=color:#f92672>-</span> <span style=color:#ae81ff>1</span>)
+</span></span><span style=display:flex><span>    <span style=color:#66d9ef>if</span> newseed <span style=color:#f92672>&amp;</span> mask <span style=color:#f92672>==</span> newseedupper27:
+</span></span><span style=display:flex><span>        possibleSeeds<span style=color:#f92672>.</span>append(oldseed)
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>print(possibleSeeds)
+</span></span><span style=display:flex><span><span style=color:#66d9ef>if</span> len(possibleSeeds) <span style=color:#f92672>!=</span> <span style=color:#ae81ff>1</span>:
+</span></span><span style=display:flex><span>    print(<span style=color:#e6db74>&#39;Error&#39;</span>)
+</span></span><span style=display:flex><span>    exit(<span style=color:#ae81ff>1</span>)
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>seed <span style=color:#f92672>=</span> possibleSeeds[<span style=color:#ae81ff>0</span>]
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#66d9ef>def</span> <span style=color:#a6e22e>next</span>(bits):
+</span></span><span style=display:flex><span>    <span style=color:#66d9ef>global</span> seed
+</span></span><span style=display:flex><span>    seed <span style=color:#f92672>=</span> (seed <span style=color:#f92672>*</span> multiplier <span style=color:#f92672>+</span> addend) <span style=color:#f92672>&amp;</span> ((<span style=color:#ae81ff>1</span> <span style=color:#f92672>&lt;&lt;</span> <span style=color:#ae81ff>48</span>) <span style=color:#f92672>-</span> <span style=color:#ae81ff>1</span>)
+</span></span><span style=display:flex><span>    <span style=color:#66d9ef>return</span> seed <span style=color:#f92672>&gt;&gt;</span> (<span style=color:#ae81ff>48</span> <span style=color:#f92672>-</span> bits)
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#66d9ef>def</span> <span style=color:#a6e22e>nextDouble</span>():
+</span></span><span style=display:flex><span>    <span style=color:#66d9ef>return</span> ((next(<span style=color:#ae81ff>26</span>) <span style=color:#f92672>&lt;&lt;</span> <span style=color:#ae81ff>27</span>) <span style=color:#f92672>+</span> next(<span style=color:#ae81ff>27</span>)) <span style=color:#f92672>/</span> (<span style=color:#ae81ff>1</span> <span style=color:#f92672>&lt;&lt;</span> <span style=color:#ae81ff>53</span>)
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>next(<span style=color:#ae81ff>1</span>)
+</span></span><span style=display:flex><span>nxtd <span style=color:#f92672>=</span> nextDouble()
+</span></span><span style=display:flex><span>r<span style=color:#f92672>.</span>sendline(str(nxtd)<span style=color:#f92672>.</span>encode())
+</span></span><span style=display:flex><span>r<span style=color:#f92672>.</span>recvline()
+</span></span><span style=display:flex><span>print(r<span style=color:#f92672>.</span>recvline()<span style=color:#f92672>.</span>decode()<span style=color:#f92672>.</span>strip())
+</span></span></code></pre></div><p>After running for just a few seconds, we get our flag:</p><pre tabindex=0><code>0.19317240683223058
+1739942358855791
+00110001011100111011111100 110001110101011000001101111
+100%|████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 4194304/4194304 [00:03&lt;00:00, 1110484.95it/s] 
+[54373198860349]
+Correct! Here is your flag: bucket{RaNd0m_nUmb3r5_53cur3_d24d8c961}
+</code></pre><p>Now let&rsquo;s see how we can take this a step further with our next challenge, <code>maze</code>.</p><h2 id=maze---478---hard>Maze - 478 - Hard</h2><blockquote><p>After you solved my last challenge I have upped my game. This time there is no way you will find the flag. Im so confident you will lose that I will give you the file to the game. Good luck! You&rsquo;re gonna need it.</p><p><a href=https://storage.ebucket.dev/Maze.class>https://storage.ebucket.dev/Maze.class</a></p></blockquote><p>This time we&rsquo;re given a <code>.class</code> file, so let&rsquo;s decompile it <a href=http://www.javadecompilers.com/>here</a> again to get the source code.
+Thankfully, it&rsquo;s not obfuscated like <a href=https://flocto.github.io/writeups/2023/bucketctf/bucketctf-megathread/#troll---464---hard>Troll</a> was, so we can actually read it.</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-java data-lang=java><span style=display:flex><span><span style=color:#f92672>import</span> java.io.FileNotFoundException<span style=color:#f92672>;</span>
+</span></span><span style=display:flex><span><span style=color:#f92672>import</span> java.util.Scanner<span style=color:#f92672>;</span>
+</span></span><span style=display:flex><span><span style=color:#f92672>import</span> java.io.File<span style=color:#f92672>;</span>
+</span></span><span style=display:flex><span><span style=color:#f92672>import</span> java.util.Random<span style=color:#f92672>;</span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#66d9ef>public</span> <span style=color:#66d9ef>class</span> <span style=color:#a6e22e>Maze</span>
+</span></span><span style=display:flex><span><span style=color:#f92672>{</span>
+</span></span><span style=display:flex><span>    <span style=color:#66d9ef>public</span> <span style=color:#66d9ef>static</span> <span style=color:#66d9ef>char</span><span style=color:#f92672>[][]</span> maze<span style=color:#f92672>;</span>
+</span></span><span style=display:flex><span>    <span style=color:#66d9ef>public</span> <span style=color:#66d9ef>static</span> Random random <span style=color:#f92672>=</span> <span style=color:#66d9ef>new</span> Random<span style=color:#f92672>();</span>
+</span></span><span style=display:flex><span>    
+</span></span><span style=display:flex><span>    <span style=color:#66d9ef>public</span> <span style=color:#66d9ef>static</span> String <span style=color:#a6e22e>getFlag</span><span style=color:#f92672>()</span> <span style=color:#f92672>{</span>
+</span></span><span style=display:flex><span>        <span style=color:#66d9ef>try</span> <span style=color:#f92672>{</span>
+</span></span><span style=display:flex><span>            <span style=color:#66d9ef>return</span> <span style=color:#66d9ef>new</span> Scanner<span style=color:#f92672>(</span><span style=color:#66d9ef>new</span> File<span style=color:#f92672>(</span><span style=color:#e6db74>&#34;flag.txt&#34;</span><span style=color:#f92672>)).</span><span style=color:#a6e22e>nextLine</span><span style=color:#f92672>();</span>
+</span></span><span style=display:flex><span>        <span style=color:#f92672>}</span>
+</span></span><span style=display:flex><span>        <span style=color:#66d9ef>catch</span> <span style=color:#f92672>(</span>FileNotFoundException ex<span style=color:#f92672>)</span> <span style=color:#f92672>{</span>
+</span></span><span style=display:flex><span>            System<span style=color:#f92672>.</span><span style=color:#a6e22e>out</span><span style=color:#f92672>.</span><span style=color:#a6e22e>println</span><span style=color:#f92672>(</span><span style=color:#e6db74>&#34;There has been an unexpected error. Please report this to the CTF admins.&#34;</span><span style=color:#f92672>);</span>
+</span></span><span style=display:flex><span>            <span style=color:#66d9ef>return</span> <span style=color:#e6db74>&#34;&#34;</span><span style=color:#f92672>;</span>
+</span></span><span style=display:flex><span>        <span style=color:#f92672>}</span>
+</span></span><span style=display:flex><span>    <span style=color:#f92672>}</span>
+</span></span><span style=display:flex><span>    
+</span></span><span style=display:flex><span>    <span style=color:#66d9ef>public</span> <span style=color:#66d9ef>static</span> <span style=color:#66d9ef>void</span> <span style=color:#a6e22e>initMap</span><span style=color:#f92672>()</span> <span style=color:#f92672>{</span>
+</span></span><span style=display:flex><span>        System<span style=color:#f92672>.</span><span style=color:#a6e22e>out</span><span style=color:#f92672>.</span><span style=color:#a6e22e>println</span><span style=color:#f92672>(</span><span style=color:#e6db74>&#34;I&#39;ve learned from my mistakes and this time I will construct a full maze you will never be able to break out of!!!&#34;</span><span style=color:#f92672>);</span>
+</span></span><span style=display:flex><span>        maze <span style=color:#f92672>=</span> <span style=color:#66d9ef>new</span> <span style=color:#66d9ef>char</span><span style=color:#f92672>[</span><span style=color:#ae81ff>41</span><span style=color:#f92672>][</span><span style=color:#ae81ff>41</span><span style=color:#f92672>];</span>
+</span></span><span style=display:flex><span>        <span style=color:#66d9ef>for</span> <span style=color:#f92672>(</span><span style=color:#66d9ef>int</span> i <span style=color:#f92672>=</span> <span style=color:#ae81ff>1</span><span style=color:#f92672>;</span> i <span style=color:#f92672>&lt;=</span> <span style=color:#ae81ff>20</span><span style=color:#f92672>;</span> <span style=color:#f92672>++</span>i<span style=color:#f92672>)</span> <span style=color:#f92672>{</span>
+</span></span><span style=display:flex><span>            <span style=color:#66d9ef>if</span> <span style=color:#f92672>(</span>i <span style=color:#f92672>%</span> <span style=color:#ae81ff>2</span> <span style=color:#f92672>==</span> <span style=color:#ae81ff>1</span><span style=color:#f92672>)</span> <span style=color:#f92672>{</span>
+</span></span><span style=display:flex><span>                <span style=color:#66d9ef>for</span> <span style=color:#f92672>(</span><span style=color:#66d9ef>int</span> j <span style=color:#f92672>=</span> <span style=color:#ae81ff>20</span> <span style=color:#f92672>-</span> i<span style=color:#f92672>;</span> j <span style=color:#f92672>&lt;=</span> <span style=color:#ae81ff>20</span> <span style=color:#f92672>+</span> i<span style=color:#f92672>;</span> <span style=color:#f92672>++</span>j<span style=color:#f92672>)</span> <span style=color:#f92672>{</span>
+</span></span><span style=display:flex><span>                    <span style=color:#66d9ef>for</span> <span style=color:#f92672>(</span><span style=color:#66d9ef>int</span> k <span style=color:#f92672>=</span> <span style=color:#ae81ff>20</span> <span style=color:#f92672>-</span> i<span style=color:#f92672>;</span> k <span style=color:#f92672>&lt;=</span> <span style=color:#ae81ff>20</span> <span style=color:#f92672>+</span> i<span style=color:#f92672>;</span> <span style=color:#f92672>++</span>k<span style=color:#f92672>)</span> <span style=color:#f92672>{</span>
+</span></span><span style=display:flex><span>                        <span style=color:#66d9ef>if</span> <span style=color:#f92672>(</span>j <span style=color:#f92672>==</span> <span style=color:#ae81ff>20</span> <span style=color:#f92672>-</span> i <span style=color:#f92672>||</span> j <span style=color:#f92672>==</span> <span style=color:#ae81ff>20</span> <span style=color:#f92672>+</span> i <span style=color:#f92672>||</span> k <span style=color:#f92672>==</span> <span style=color:#ae81ff>20</span> <span style=color:#f92672>-</span> i <span style=color:#f92672>||</span> k <span style=color:#f92672>==</span> <span style=color:#ae81ff>20</span> <span style=color:#f92672>+</span> i<span style=color:#f92672>)</span> <span style=color:#f92672>{</span>
+</span></span><span style=display:flex><span>                            maze<span style=color:#f92672>[</span>j<span style=color:#f92672>][</span>k<span style=color:#f92672>]</span> <span style=color:#f92672>=</span> <span style=color:#e6db74>&#39;#&#39;</span><span style=color:#f92672>;</span>
+</span></span><span style=display:flex><span>                        <span style=color:#f92672>}</span>
+</span></span><span style=display:flex><span>                    <span style=color:#f92672>}</span>
+</span></span><span style=display:flex><span>                <span style=color:#f92672>}</span>
+</span></span><span style=display:flex><span>            <span style=color:#f92672>}</span>
+</span></span><span style=display:flex><span>        <span style=color:#f92672>}</span>
+</span></span><span style=display:flex><span>        <span style=color:#66d9ef>for</span> <span style=color:#f92672>(</span><span style=color:#66d9ef>int</span> l <span style=color:#f92672>=</span> <span style=color:#ae81ff>0</span><span style=color:#f92672>;</span> l <span style=color:#f92672>&lt;</span> maze<span style=color:#f92672>.</span><span style=color:#a6e22e>length</span><span style=color:#f92672>;</span> <span style=color:#f92672>++</span>l<span style=color:#f92672>)</span> <span style=color:#f92672>{</span>
+</span></span><span style=display:flex><span>            <span style=color:#66d9ef>for</span> <span style=color:#f92672>(</span><span style=color:#66d9ef>int</span> n <span style=color:#f92672>=</span> <span style=color:#ae81ff>0</span><span style=color:#f92672>;</span> n <span style=color:#f92672>&lt;</span> maze<span style=color:#f92672>[</span>l<span style=color:#f92672>].</span><span style=color:#a6e22e>length</span><span style=color:#f92672>;</span> <span style=color:#f92672>++</span>n<span style=color:#f92672>)</span> <span style=color:#f92672>{</span>
+</span></span><span style=display:flex><span>                <span style=color:#66d9ef>if</span> <span style=color:#f92672>(</span>maze<span style=color:#f92672>[</span>l<span style=color:#f92672>][</span>n<span style=color:#f92672>]</span> <span style=color:#f92672>!=</span> <span style=color:#e6db74>&#39;#&#39;</span><span style=color:#f92672>)</span> <span style=color:#f92672>{</span>
+</span></span><span style=display:flex><span>                    maze<span style=color:#f92672>[</span>l<span style=color:#f92672>][</span>n<span style=color:#f92672>]</span> <span style=color:#f92672>=</span> <span style=color:#e6db74>&#39; &#39;</span><span style=color:#f92672>;</span>
+</span></span><span style=display:flex><span>                <span style=color:#f92672>}</span>
+</span></span><span style=display:flex><span>                System<span style=color:#f92672>.</span><span style=color:#a6e22e>out</span><span style=color:#f92672>.</span><span style=color:#a6e22e>print</span><span style=color:#f92672>(</span>maze<span style=color:#f92672>[</span>l<span style=color:#f92672>][</span>n<span style=color:#f92672>]);</span>
+</span></span><span style=display:flex><span>            <span style=color:#f92672>}</span>
+</span></span><span style=display:flex><span>            System<span style=color:#f92672>.</span><span style=color:#a6e22e>out</span><span style=color:#f92672>.</span><span style=color:#a6e22e>println</span><span style=color:#f92672>();</span>
+</span></span><span style=display:flex><span>        <span style=color:#f92672>}</span>
+</span></span><span style=display:flex><span>        <span style=color:#66d9ef>for</span> <span style=color:#f92672>(</span><span style=color:#66d9ef>int</span> n2 <span style=color:#f92672>=</span> <span style=color:#ae81ff>0</span><span style=color:#f92672>;</span> n2 <span style=color:#f92672>&lt;</span> <span style=color:#ae81ff>10</span><span style=color:#f92672>;</span> <span style=color:#f92672>++</span>n2<span style=color:#f92672>)</span> <span style=color:#f92672>{</span>
+</span></span><span style=display:flex><span>            <span style=color:#66d9ef>final</span> <span style=color:#66d9ef>int</span> bound <span style=color:#f92672>=</span> <span style=color:#ae81ff>3</span> <span style=color:#f92672>+</span> n2 <span style=color:#f92672>*</span> <span style=color:#ae81ff>4</span><span style=color:#f92672>;</span>
+</span></span><span style=display:flex><span>            <span style=color:#66d9ef>final</span> <span style=color:#66d9ef>int</span> nextInt <span style=color:#f92672>=</span> random<span style=color:#f92672>.</span><span style=color:#a6e22e>nextInt</span><span style=color:#f92672>(</span>bound<span style=color:#f92672>);</span>
+</span></span><span style=display:flex><span>            <span style=color:#66d9ef>switch</span> <span style=color:#f92672>(</span>random<span style=color:#f92672>.</span><span style=color:#a6e22e>nextInt</span><span style=color:#f92672>(</span><span style=color:#ae81ff>4</span><span style=color:#f92672>))</span> <span style=color:#f92672>{</span>
+</span></span><span style=display:flex><span>                <span style=color:#66d9ef>case</span> <span style=color:#ae81ff>0</span><span style=color:#f92672>:</span> <span style=color:#f92672>{</span>
+</span></span><span style=display:flex><span>                    maze<span style=color:#f92672>[</span><span style=color:#ae81ff>20</span> <span style=color:#f92672>+</span> bound <span style=color:#f92672>/</span> <span style=color:#ae81ff>2</span><span style=color:#f92672>][</span><span style=color:#ae81ff>20</span> <span style=color:#f92672>-</span> bound <span style=color:#f92672>/</span> <span style=color:#ae81ff>2</span> <span style=color:#f92672>+</span> nextInt<span style=color:#f92672>]</span> <span style=color:#f92672>=</span> <span style=color:#e6db74>&#39; &#39;</span><span style=color:#f92672>;</span>
+</span></span><span style=display:flex><span>                    <span style=color:#66d9ef>break</span><span style=color:#f92672>;</span>
+</span></span><span style=display:flex><span>                <span style=color:#f92672>}</span>
+</span></span><span style=display:flex><span>                <span style=color:#66d9ef>case</span> <span style=color:#ae81ff>1</span><span style=color:#f92672>:</span> <span style=color:#f92672>{</span>
+</span></span><span style=display:flex><span>                    maze<span style=color:#f92672>[</span><span style=color:#ae81ff>20</span> <span style=color:#f92672>-</span> bound <span style=color:#f92672>/</span> <span style=color:#ae81ff>2</span> <span style=color:#f92672>+</span> nextInt<span style=color:#f92672>][</span><span style=color:#ae81ff>20</span> <span style=color:#f92672>+</span> bound <span style=color:#f92672>/</span> <span style=color:#ae81ff>2</span><span style=color:#f92672>]</span> <span style=color:#f92672>=</span> <span style=color:#e6db74>&#39; &#39;</span><span style=color:#f92672>;</span>
+</span></span><span style=display:flex><span>                    <span style=color:#66d9ef>break</span><span style=color:#f92672>;</span>
+</span></span><span style=display:flex><span>                <span style=color:#f92672>}</span>
+</span></span><span style=display:flex><span>                <span style=color:#66d9ef>case</span> <span style=color:#ae81ff>2</span><span style=color:#f92672>:</span> <span style=color:#f92672>{</span>
+</span></span><span style=display:flex><span>                    maze<span style=color:#f92672>[</span><span style=color:#ae81ff>20</span> <span style=color:#f92672>-</span> bound <span style=color:#f92672>/</span> <span style=color:#ae81ff>2</span><span style=color:#f92672>][</span><span style=color:#ae81ff>20</span> <span style=color:#f92672>-</span> bound <span style=color:#f92672>/</span> <span style=color:#ae81ff>2</span> <span style=color:#f92672>+</span> nextInt<span style=color:#f92672>]</span> <span style=color:#f92672>=</span> <span style=color:#e6db74>&#39; &#39;</span><span style=color:#f92672>;</span>
+</span></span><span style=display:flex><span>                    <span style=color:#66d9ef>break</span><span style=color:#f92672>;</span>
+</span></span><span style=display:flex><span>                <span style=color:#f92672>}</span>
+</span></span><span style=display:flex><span>                <span style=color:#66d9ef>case</span> <span style=color:#ae81ff>3</span><span style=color:#f92672>:</span> <span style=color:#f92672>{</span>
+</span></span><span style=display:flex><span>                    maze<span style=color:#f92672>[</span><span style=color:#ae81ff>20</span> <span style=color:#f92672>-</span> bound <span style=color:#f92672>/</span> <span style=color:#ae81ff>2</span> <span style=color:#f92672>+</span> nextInt<span style=color:#f92672>][</span><span style=color:#ae81ff>20</span> <span style=color:#f92672>-</span> bound <span style=color:#f92672>/</span> <span style=color:#ae81ff>2</span><span style=color:#f92672>]</span> <span style=color:#f92672>=</span> <span style=color:#e6db74>&#39; &#39;</span><span style=color:#f92672>;</span>
+</span></span><span style=display:flex><span>                    <span style=color:#66d9ef>break</span><span style=color:#f92672>;</span>
+</span></span><span style=display:flex><span>                <span style=color:#f92672>}</span>
+</span></span><span style=display:flex><span>            <span style=color:#f92672>}</span>
+</span></span><span style=display:flex><span>        <span style=color:#f92672>}</span>
+</span></span><span style=display:flex><span>        maze<span style=color:#f92672>[</span><span style=color:#ae81ff>20</span><span style=color:#f92672>][</span><span style=color:#ae81ff>20</span><span style=color:#f92672>]</span> <span style=color:#f92672>=</span> <span style=color:#e6db74>&#39;X&#39;</span><span style=color:#f92672>;</span>
+</span></span><span style=display:flex><span>    <span style=color:#f92672>}</span>
+</span></span><span style=display:flex><span>    
+</span></span><span style=display:flex><span>    <span style=color:#66d9ef>public</span> <span style=color:#66d9ef>static</span> <span style=color:#66d9ef>void</span> <span style=color:#a6e22e>main</span><span style=color:#f92672>(</span><span style=color:#66d9ef>final</span> String<span style=color:#f92672>[]</span> array<span style=color:#f92672>)</span> <span style=color:#f92672>{</span>
+</span></span><span style=display:flex><span>        initMap<span style=color:#f92672>();</span>
+</span></span><span style=display:flex><span>        <span style=color:#66d9ef>int</span> n <span style=color:#f92672>=</span> <span style=color:#ae81ff>20</span><span style=color:#f92672>;</span>
+</span></span><span style=display:flex><span>        <span style=color:#66d9ef>int</span> n2 <span style=color:#f92672>=</span> <span style=color:#ae81ff>20</span><span style=color:#f92672>;</span>
+</span></span><span style=display:flex><span>        <span style=color:#66d9ef>try</span> <span style=color:#f92672>{</span>
+</span></span><span style=display:flex><span>            <span style=color:#66d9ef>final</span> Scanner scanner <span style=color:#f92672>=</span> <span style=color:#66d9ef>new</span> Scanner<span style=color:#f92672>(</span>System<span style=color:#f92672>.</span><span style=color:#a6e22e>in</span><span style=color:#f92672>);</span>
+</span></span><span style=display:flex><span>            <span style=color:#66d9ef>while</span> <span style=color:#f92672>(</span><span style=color:#66d9ef>true</span><span style=color:#f92672>)</span> <span style=color:#f92672>{</span>
+</span></span><span style=display:flex><span>                <span style=color:#66d9ef>final</span> <span style=color:#66d9ef>char</span> char1 <span style=color:#f92672>=</span> scanner<span style=color:#f92672>.</span><span style=color:#a6e22e>next</span><span style=color:#f92672>().</span><span style=color:#a6e22e>charAt</span><span style=color:#f92672>(</span><span style=color:#ae81ff>0</span><span style=color:#f92672>);</span>
+</span></span><span style=display:flex><span>                <span style=color:#66d9ef>if</span> <span style=color:#f92672>(</span>char1 <span style=color:#f92672>==</span> <span style=color:#e6db74>&#39;Q&#39;</span><span style=color:#f92672>)</span> <span style=color:#f92672>{</span>
+</span></span><span style=display:flex><span>                    <span style=color:#66d9ef>if</span> <span style=color:#f92672>(</span>maze<span style=color:#f92672>[</span>n <span style=color:#f92672>-</span> <span style=color:#ae81ff>1</span><span style=color:#f92672>][</span>n2 <span style=color:#f92672>-</span> <span style=color:#ae81ff>1</span><span style=color:#f92672>]</span> <span style=color:#f92672>==</span> <span style=color:#e6db74>&#39;#&#39;</span><span style=color:#f92672>)</span> <span style=color:#f92672>{</span>
+</span></span><span style=display:flex><span>                        <span style=color:#66d9ef>break</span><span style=color:#f92672>;</span>
+</span></span><span style=display:flex><span>                    <span style=color:#f92672>}</span>
+</span></span><span style=display:flex><span>                    maze<span style=color:#f92672>[</span>n<span style=color:#f92672>][</span>n2<span style=color:#f92672>]</span> <span style=color:#f92672>=</span> <span style=color:#e6db74>&#39; &#39;</span><span style=color:#f92672>;</span>
+</span></span><span style=display:flex><span>                    maze<span style=color:#f92672>[--</span>n<span style=color:#f92672>][--</span>n2<span style=color:#f92672>]</span> <span style=color:#f92672>=</span> <span style=color:#e6db74>&#39;X&#39;</span><span style=color:#f92672>;</span>
+</span></span><span style=display:flex><span>                <span style=color:#f92672>}</span>
+</span></span><span style=display:flex><span>                <span style=color:#66d9ef>if</span> <span style=color:#f92672>(</span>char1 <span style=color:#f92672>==</span> <span style=color:#e6db74>&#39;W&#39;</span><span style=color:#f92672>)</span> <span style=color:#f92672>{</span>
+</span></span><span style=display:flex><span>                    <span style=color:#66d9ef>if</span> <span style=color:#f92672>(</span>maze<span style=color:#f92672>[</span>n <span style=color:#f92672>-</span> <span style=color:#ae81ff>1</span><span style=color:#f92672>][</span>n2<span style=color:#f92672>]</span> <span style=color:#f92672>==</span> <span style=color:#e6db74>&#39;#&#39;</span><span style=color:#f92672>)</span> <span style=color:#f92672>{</span>
+</span></span><span style=display:flex><span>                        <span style=color:#66d9ef>break</span><span style=color:#f92672>;</span>
+</span></span><span style=display:flex><span>                    <span style=color:#f92672>}</span>
+</span></span><span style=display:flex><span>                    maze<span style=color:#f92672>[</span>n<span style=color:#f92672>][</span>n2<span style=color:#f92672>]</span> <span style=color:#f92672>=</span> <span style=color:#e6db74>&#39; &#39;</span><span style=color:#f92672>;</span>
+</span></span><span style=display:flex><span>                    maze<span style=color:#f92672>[--</span>n<span style=color:#f92672>][</span>n2<span style=color:#f92672>]</span> <span style=color:#f92672>=</span> <span style=color:#e6db74>&#39;X&#39;</span><span style=color:#f92672>;</span>
+</span></span><span style=display:flex><span>                <span style=color:#f92672>}</span>
+</span></span><span style=display:flex><span>                <span style=color:#66d9ef>if</span> <span style=color:#f92672>(</span>char1 <span style=color:#f92672>==</span> <span style=color:#e6db74>&#39;E&#39;</span><span style=color:#f92672>)</span> <span style=color:#f92672>{</span>
+</span></span><span style=display:flex><span>                    <span style=color:#66d9ef>if</span> <span style=color:#f92672>(</span>maze<span style=color:#f92672>[</span>n <span style=color:#f92672>-</span> <span style=color:#ae81ff>1</span><span style=color:#f92672>][</span>n2 <span style=color:#f92672>+</span> <span style=color:#ae81ff>1</span><span style=color:#f92672>]</span> <span style=color:#f92672>==</span> <span style=color:#e6db74>&#39;#&#39;</span><span style=color:#f92672>)</span> <span style=color:#f92672>{</span>
+</span></span><span style=display:flex><span>                        <span style=color:#66d9ef>break</span><span style=color:#f92672>;</span>
+</span></span><span style=display:flex><span>                    <span style=color:#f92672>}</span>
+</span></span><span style=display:flex><span>                    maze<span style=color:#f92672>[</span>n<span style=color:#f92672>][</span>n2<span style=color:#f92672>]</span> <span style=color:#f92672>=</span> <span style=color:#e6db74>&#39; &#39;</span><span style=color:#f92672>;</span>
+</span></span><span style=display:flex><span>                    maze<span style=color:#f92672>[--</span>n<span style=color:#f92672>][++</span>n2<span style=color:#f92672>]</span> <span style=color:#f92672>=</span> <span style=color:#e6db74>&#39;X&#39;</span><span style=color:#f92672>;</span>
+</span></span><span style=display:flex><span>                <span style=color:#f92672>}</span>
+</span></span><span style=display:flex><span>                <span style=color:#66d9ef>if</span> <span style=color:#f92672>(</span>char1 <span style=color:#f92672>==</span> <span style=color:#e6db74>&#39;D&#39;</span><span style=color:#f92672>)</span> <span style=color:#f92672>{</span>
+</span></span><span style=display:flex><span>                    <span style=color:#66d9ef>if</span> <span style=color:#f92672>(</span>maze<span style=color:#f92672>[</span>n<span style=color:#f92672>][</span>n2 <span style=color:#f92672>+</span> <span style=color:#ae81ff>1</span><span style=color:#f92672>]</span> <span style=color:#f92672>==</span> <span style=color:#e6db74>&#39;#&#39;</span><span style=color:#f92672>)</span> <span style=color:#f92672>{</span>
+</span></span><span style=display:flex><span>                        <span style=color:#66d9ef>break</span><span style=color:#f92672>;</span>
+</span></span><span style=display:flex><span>                    <span style=color:#f92672>}</span>
+</span></span><span style=display:flex><span>                    maze<span style=color:#f92672>[</span>n<span style=color:#f92672>][</span>n2<span style=color:#f92672>]</span> <span style=color:#f92672>=</span> <span style=color:#e6db74>&#39; &#39;</span><span style=color:#f92672>;</span>
+</span></span><span style=display:flex><span>                    maze<span style=color:#f92672>[</span>n<span style=color:#f92672>][++</span>n2<span style=color:#f92672>]</span> <span style=color:#f92672>=</span> <span style=color:#e6db74>&#39;X&#39;</span><span style=color:#f92672>;</span>
+</span></span><span style=display:flex><span>                <span style=color:#f92672>}</span>
+</span></span><span style=display:flex><span>                <span style=color:#66d9ef>if</span> <span style=color:#f92672>(</span>char1 <span style=color:#f92672>==</span> <span style=color:#e6db74>&#39;C&#39;</span><span style=color:#f92672>)</span> <span style=color:#f92672>{</span>
+</span></span><span style=display:flex><span>                    <span style=color:#66d9ef>if</span> <span style=color:#f92672>(</span>maze<span style=color:#f92672>[</span>n <span style=color:#f92672>+</span> <span style=color:#ae81ff>1</span><span style=color:#f92672>][</span>n2 <span style=color:#f92672>+</span> <span style=color:#ae81ff>1</span><span style=color:#f92672>]</span> <span style=color:#f92672>==</span> <span style=color:#e6db74>&#39;#&#39;</span><span style=color:#f92672>)</span> <span style=color:#f92672>{</span>
+</span></span><span style=display:flex><span>                        <span style=color:#66d9ef>break</span><span style=color:#f92672>;</span>
+</span></span><span style=display:flex><span>                    <span style=color:#f92672>}</span>
+</span></span><span style=display:flex><span>                    maze<span style=color:#f92672>[</span>n<span style=color:#f92672>][</span>n2<span style=color:#f92672>]</span> <span style=color:#f92672>=</span> <span style=color:#e6db74>&#39; &#39;</span><span style=color:#f92672>;</span>
+</span></span><span style=display:flex><span>                    maze<span style=color:#f92672>[++</span>n<span style=color:#f92672>][++</span>n2<span style=color:#f92672>]</span> <span style=color:#f92672>=</span> <span style=color:#e6db74>&#39;X&#39;</span><span style=color:#f92672>;</span>
+</span></span><span style=display:flex><span>                <span style=color:#f92672>}</span>
+</span></span><span style=display:flex><span>                <span style=color:#66d9ef>if</span> <span style=color:#f92672>(</span>char1 <span style=color:#f92672>==</span> <span style=color:#e6db74>&#39;S&#39;</span><span style=color:#f92672>)</span> <span style=color:#f92672>{</span>
+</span></span><span style=display:flex><span>                    <span style=color:#66d9ef>if</span> <span style=color:#f92672>(</span>maze<span style=color:#f92672>[</span>n <span style=color:#f92672>+</span> <span style=color:#ae81ff>1</span><span style=color:#f92672>][</span>n2<span style=color:#f92672>]</span> <span style=color:#f92672>==</span> <span style=color:#e6db74>&#39;#&#39;</span><span style=color:#f92672>)</span> <span style=color:#f92672>{</span>
+</span></span><span style=display:flex><span>                        <span style=color:#66d9ef>break</span><span style=color:#f92672>;</span>
+</span></span><span style=display:flex><span>                    <span style=color:#f92672>}</span>
+</span></span><span style=display:flex><span>                    maze<span style=color:#f92672>[</span>n<span style=color:#f92672>][</span>n2<span style=color:#f92672>]</span> <span style=color:#f92672>=</span> <span style=color:#e6db74>&#39; &#39;</span><span style=color:#f92672>;</span>
+</span></span><span style=display:flex><span>                    maze<span style=color:#f92672>[++</span>n<span style=color:#f92672>][</span>n2<span style=color:#f92672>]</span> <span style=color:#f92672>=</span> <span style=color:#e6db74>&#39;X&#39;</span><span style=color:#f92672>;</span>
+</span></span><span style=display:flex><span>                <span style=color:#f92672>}</span>
+</span></span><span style=display:flex><span>                <span style=color:#66d9ef>if</span> <span style=color:#f92672>(</span>char1 <span style=color:#f92672>==</span> <span style=color:#e6db74>&#39;Z&#39;</span><span style=color:#f92672>)</span> <span style=color:#f92672>{</span>
+</span></span><span style=display:flex><span>                    <span style=color:#66d9ef>if</span> <span style=color:#f92672>(</span>maze<span style=color:#f92672>[</span>n <span style=color:#f92672>+</span> <span style=color:#ae81ff>1</span><span style=color:#f92672>][</span>n2 <span style=color:#f92672>-</span> <span style=color:#ae81ff>1</span><span style=color:#f92672>]</span> <span style=color:#f92672>==</span> <span style=color:#e6db74>&#39;#&#39;</span><span style=color:#f92672>)</span> <span style=color:#f92672>{</span>
+</span></span><span style=display:flex><span>                        <span style=color:#66d9ef>break</span><span style=color:#f92672>;</span>
+</span></span><span style=display:flex><span>                    <span style=color:#f92672>}</span>
+</span></span><span style=display:flex><span>                    maze<span style=color:#f92672>[</span>n<span style=color:#f92672>][</span>n2<span style=color:#f92672>]</span> <span style=color:#f92672>=</span> <span style=color:#e6db74>&#39; &#39;</span><span style=color:#f92672>;</span>
+</span></span><span style=display:flex><span>                    maze<span style=color:#f92672>[++</span>n<span style=color:#f92672>][--</span>n2<span style=color:#f92672>]</span> <span style=color:#f92672>=</span> <span style=color:#e6db74>&#39;X&#39;</span><span style=color:#f92672>;</span>
+</span></span><span style=display:flex><span>                <span style=color:#f92672>}</span>
+</span></span><span style=display:flex><span>                <span style=color:#66d9ef>if</span> <span style=color:#f92672>(</span>char1 <span style=color:#f92672>==</span> <span style=color:#e6db74>&#39;A&#39;</span><span style=color:#f92672>)</span> <span style=color:#f92672>{</span>
+</span></span><span style=display:flex><span>                    <span style=color:#66d9ef>if</span> <span style=color:#f92672>(</span>maze<span style=color:#f92672>[</span>n<span style=color:#f92672>][</span>n2 <span style=color:#f92672>-</span> <span style=color:#ae81ff>1</span><span style=color:#f92672>]</span> <span style=color:#f92672>==</span> <span style=color:#e6db74>&#39;#&#39;</span><span style=color:#f92672>)</span> <span style=color:#f92672>{</span>
+</span></span><span style=display:flex><span>                        <span style=color:#66d9ef>break</span><span style=color:#f92672>;</span>
+</span></span><span style=display:flex><span>                    <span style=color:#f92672>}</span>
+</span></span><span style=display:flex><span>                    maze<span style=color:#f92672>[</span>n<span style=color:#f92672>][</span>n2<span style=color:#f92672>]</span> <span style=color:#f92672>=</span> <span style=color:#e6db74>&#39; &#39;</span><span style=color:#f92672>;</span>
+</span></span><span style=display:flex><span>                    maze<span style=color:#f92672>[</span>n<span style=color:#f92672>][--</span>n2<span style=color:#f92672>]</span> <span style=color:#f92672>=</span> <span style=color:#e6db74>&#39;X&#39;</span><span style=color:#f92672>;</span>
+</span></span><span style=display:flex><span>                <span style=color:#f92672>}</span>
+</span></span><span style=display:flex><span>                <span style=color:#66d9ef>if</span> <span style=color:#f92672>(</span>char1 <span style=color:#f92672>==</span> <span style=color:#e6db74>&#39;R&#39;</span><span style=color:#f92672>)</span> <span style=color:#f92672>{</span>
+</span></span><span style=display:flex><span>                    System<span style=color:#f92672>.</span><span style=color:#a6e22e>out</span><span style=color:#f92672>.</span><span style=color:#a6e22e>println</span><span style=color:#f92672>(</span><span style=color:#e6db74>&#34;Here is a random number for you since i&#39;m nice: &#34;</span> <span style=color:#f92672>+</span> random<span style=color:#f92672>.</span><span style=color:#a6e22e>nextDouble</span><span style=color:#f92672>());</span>
+</span></span><span style=display:flex><span>                <span style=color:#f92672>}</span>
+</span></span><span style=display:flex><span>            <span style=color:#f92672>}</span>
+</span></span><span style=display:flex><span>            scanner<span style=color:#f92672>.</span><span style=color:#a6e22e>close</span><span style=color:#f92672>();</span>
+</span></span><span style=display:flex><span>            System<span style=color:#f92672>.</span><span style=color:#a6e22e>out</span><span style=color:#f92672>.</span><span style=color:#a6e22e>println</span><span style=color:#f92672>(</span><span style=color:#e6db74>&#34;YOU LOSE I WIN! BETTER LUCK NEXT TIME!&#34;</span><span style=color:#f92672>);</span>
+</span></span><span style=display:flex><span>        <span style=color:#f92672>}</span>
+</span></span><span style=display:flex><span>        <span style=color:#66d9ef>catch</span> <span style=color:#f92672>(</span>Exception ex<span style=color:#f92672>)</span> <span style=color:#f92672>{</span>
+</span></span><span style=display:flex><span>            <span style=color:#66d9ef>if</span> <span style=color:#f92672>(</span>ex <span style=color:#66d9ef>instanceof</span> ArrayIndexOutOfBoundsException<span style=color:#f92672>)</span> <span style=color:#f92672>{</span>
+</span></span><span style=display:flex><span>                System<span style=color:#f92672>.</span><span style=color:#a6e22e>out</span><span style=color:#f92672>.</span><span style=color:#a6e22e>println</span><span style=color:#f92672>(</span>getFlag<span style=color:#f92672>());</span>
+</span></span><span style=display:flex><span>            <span style=color:#f92672>}</span>
+</span></span><span style=display:flex><span>        <span style=color:#f92672>}</span>
+</span></span><span style=display:flex><span>    <span style=color:#f92672>}</span>
+</span></span><span style=display:flex><span><span style=color:#f92672>}</span>
+</span></span></code></pre></div><p>It&rsquo;s a bit long, so let&rsquo;s start decomposing it. Let&rsquo;s start from our goal, the <code>getFlag</code> function.</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-java data-lang=java><span style=display:flex><span><span style=color:#66d9ef>public</span> <span style=color:#66d9ef>static</span> String <span style=color:#a6e22e>getFlag</span><span style=color:#f92672>()</span> <span style=color:#f92672>{</span>
+</span></span><span style=display:flex><span>    <span style=color:#66d9ef>try</span> <span style=color:#f92672>{</span>
+</span></span><span style=display:flex><span>        <span style=color:#66d9ef>return</span> <span style=color:#66d9ef>new</span> Scanner<span style=color:#f92672>(</span><span style=color:#66d9ef>new</span> File<span style=color:#f92672>(</span><span style=color:#e6db74>&#34;flag.txt&#34;</span><span style=color:#f92672>)).</span><span style=color:#a6e22e>nextLine</span><span style=color:#f92672>();</span>
+</span></span><span style=display:flex><span>    <span style=color:#f92672>}</span>
+</span></span><span style=display:flex><span>    <span style=color:#66d9ef>catch</span> <span style=color:#f92672>(</span>FileNotFoundException ex<span style=color:#f92672>)</span> <span style=color:#f92672>{</span>
+</span></span><span style=display:flex><span>        System<span style=color:#f92672>.</span><span style=color:#a6e22e>out</span><span style=color:#f92672>.</span><span style=color:#a6e22e>println</span><span style=color:#f92672>(</span><span style=color:#e6db74>&#34;There has been an unexpected error. Please report this to the CTF admins.&#34;</span><span style=color:#f92672>);</span>
+</span></span><span style=display:flex><span>        <span style=color:#66d9ef>return</span> <span style=color:#e6db74>&#34;&#34;</span><span style=color:#f92672>;</span>
+</span></span><span style=display:flex><span>    <span style=color:#f92672>}</span>
+</span></span><span style=display:flex><span><span style=color:#f92672>}</span>
+</span></span></code></pre></div><p>The only place this is called is at the end of the main method:</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-java data-lang=java><span style=display:flex><span><span style=color:#66d9ef>catch</span> <span style=color:#f92672>(</span>Exception ex<span style=color:#f92672>)</span> <span style=color:#f92672>{</span>
+</span></span><span style=display:flex><span>    <span style=color:#66d9ef>if</span> <span style=color:#f92672>(</span>ex <span style=color:#66d9ef>instanceof</span> ArrayIndexOutOfBoundsException<span style=color:#f92672>)</span> <span style=color:#f92672>{</span>
+</span></span><span style=display:flex><span>        System<span style=color:#f92672>.</span><span style=color:#a6e22e>out</span><span style=color:#f92672>.</span><span style=color:#a6e22e>println</span><span style=color:#f92672>(</span>getFlag<span style=color:#f92672>());</span>
+</span></span><span style=display:flex><span>    <span style=color:#f92672>}</span>
+</span></span><span style=display:flex><span><span style=color:#f92672>}</span>
+</span></span></code></pre></div><p>Which means to get the flag, we somehow need to throw an <code>ArrayIndexOutOfBoundsException</code>.</p><p>Looking at the rest of the main method, we can clearly see the intended way to do this: We just need to somehow escape out of maze and reach the border.</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-java data-lang=java><span style=display:flex><span><span style=color:#66d9ef>try</span> <span style=color:#f92672>{</span>
+</span></span><span style=display:flex><span>    <span style=color:#66d9ef>final</span> Scanner scanner <span style=color:#f92672>=</span> <span style=color:#66d9ef>new</span> Scanner<span style=color:#f92672>(</span>System<span style=color:#f92672>.</span><span style=color:#a6e22e>in</span><span style=color:#f92672>);</span>
+</span></span><span style=display:flex><span>    <span style=color:#66d9ef>while</span> <span style=color:#f92672>(</span><span style=color:#66d9ef>true</span><span style=color:#f92672>)</span> <span style=color:#f92672>{</span>
+</span></span><span style=display:flex><span>        <span style=color:#66d9ef>final</span> <span style=color:#66d9ef>char</span> char1 <span style=color:#f92672>=</span> scanner<span style=color:#f92672>.</span><span style=color:#a6e22e>next</span><span style=color:#f92672>().</span><span style=color:#a6e22e>charAt</span><span style=color:#f92672>(</span><span style=color:#ae81ff>0</span><span style=color:#f92672>);</span>
+</span></span><span style=display:flex><span>        <span style=color:#66d9ef>if</span> <span style=color:#f92672>(</span>char1 <span style=color:#f92672>==</span> <span style=color:#e6db74>&#39;Q&#39;</span><span style=color:#f92672>)</span> <span style=color:#f92672>{</span>
+</span></span><span style=display:flex><span>            <span style=color:#66d9ef>if</span> <span style=color:#f92672>(</span>maze<span style=color:#f92672>[</span>n <span style=color:#f92672>-</span> <span style=color:#ae81ff>1</span><span style=color:#f92672>][</span>n2 <span style=color:#f92672>-</span> <span style=color:#ae81ff>1</span><span style=color:#f92672>]</span> <span style=color:#f92672>==</span> <span style=color:#e6db74>&#39;#&#39;</span><span style=color:#f92672>)</span> <span style=color:#f92672>{</span>
+</span></span><span style=display:flex><span>                <span style=color:#66d9ef>break</span><span style=color:#f92672>;</span>
+</span></span><span style=display:flex><span>            <span style=color:#f92672>}</span>
+</span></span><span style=display:flex><span>            maze<span style=color:#f92672>[</span>n<span style=color:#f92672>][</span>n2<span style=color:#f92672>]</span> <span style=color:#f92672>=</span> <span style=color:#e6db74>&#39; &#39;</span><span style=color:#f92672>;</span>
+</span></span><span style=display:flex><span>            maze<span style=color:#f92672>[--</span>n<span style=color:#f92672>][--</span>n2<span style=color:#f92672>]</span> <span style=color:#f92672>=</span> <span style=color:#e6db74>&#39;X&#39;</span><span style=color:#f92672>;</span>
+</span></span><span style=display:flex><span>        <span style=color:#f92672>}</span>
+</span></span><span style=display:flex><span>        <span style=color:#66d9ef>if</span> <span style=color:#f92672>(</span>char1 <span style=color:#f92672>==</span> <span style=color:#e6db74>&#39;W&#39;</span><span style=color:#f92672>)</span> <span style=color:#f92672>{</span>
+</span></span><span style=display:flex><span>            <span style=color:#66d9ef>if</span> <span style=color:#f92672>(</span>maze<span style=color:#f92672>[</span>n <span style=color:#f92672>-</span> <span style=color:#ae81ff>1</span><span style=color:#f92672>][</span>n2<span style=color:#f92672>]</span> <span style=color:#f92672>==</span> <span style=color:#e6db74>&#39;#&#39;</span><span style=color:#f92672>)</span> <span style=color:#f92672>{</span>
+</span></span><span style=display:flex><span>                <span style=color:#66d9ef>break</span><span style=color:#f92672>;</span>
+</span></span><span style=display:flex><span>            <span style=color:#f92672>}</span>
+</span></span><span style=display:flex><span>            maze<span style=color:#f92672>[</span>n<span style=color:#f92672>][</span>n2<span style=color:#f92672>]</span> <span style=color:#f92672>=</span> <span style=color:#e6db74>&#39; &#39;</span><span style=color:#f92672>;</span>
+</span></span><span style=display:flex><span>            maze<span style=color:#f92672>[--</span>n<span style=color:#f92672>][</span>n2<span style=color:#f92672>]</span> <span style=color:#f92672>=</span> <span style=color:#e6db74>&#39;X&#39;</span><span style=color:#f92672>;</span>
+</span></span><span style=display:flex><span>        <span style=color:#f92672>}</span>
+</span></span><span style=display:flex><span>        <span style=color:#66d9ef>if</span> <span style=color:#f92672>(</span>char1 <span style=color:#f92672>==</span> <span style=color:#e6db74>&#39;E&#39;</span><span style=color:#f92672>)</span> <span style=color:#f92672>{</span>
+</span></span><span style=display:flex><span>            <span style=color:#66d9ef>if</span> <span style=color:#f92672>(</span>maze<span style=color:#f92672>[</span>n <span style=color:#f92672>-</span> <span style=color:#ae81ff>1</span><span style=color:#f92672>][</span>n2 <span style=color:#f92672>+</span> <span style=color:#ae81ff>1</span><span style=color:#f92672>]</span> <span style=color:#f92672>==</span> <span style=color:#e6db74>&#39;#&#39;</span><span style=color:#f92672>)</span> <span style=color:#f92672>{</span>
+</span></span><span style=display:flex><span>                <span style=color:#66d9ef>break</span><span style=color:#f92672>;</span>
+</span></span><span style=display:flex><span>            <span style=color:#f92672>}</span>
+</span></span><span style=display:flex><span>            maze<span style=color:#f92672>[</span>n<span style=color:#f92672>][</span>n2<span style=color:#f92672>]</span> <span style=color:#f92672>=</span> <span style=color:#e6db74>&#39; &#39;</span><span style=color:#f92672>;</span>
+</span></span><span style=display:flex><span>            maze<span style=color:#f92672>[--</span>n<span style=color:#f92672>][++</span>n2<span style=color:#f92672>]</span> <span style=color:#f92672>=</span> <span style=color:#e6db74>&#39;X&#39;</span><span style=color:#f92672>;</span>
+</span></span><span style=display:flex><span>        <span style=color:#f92672>}</span>
+</span></span><span style=display:flex><span>        <span style=color:#66d9ef>if</span> <span style=color:#f92672>(</span>char1 <span style=color:#f92672>==</span> <span style=color:#e6db74>&#39;D&#39;</span><span style=color:#f92672>)</span> <span style=color:#f92672>{</span>
+</span></span><span style=display:flex><span>            <span style=color:#66d9ef>if</span> <span style=color:#f92672>(</span>maze<span style=color:#f92672>[</span>n<span style=color:#f92672>][</span>n2 <span style=color:#f92672>+</span> <span style=color:#ae81ff>1</span><span style=color:#f92672>]</span> <span style=color:#f92672>==</span> <span style=color:#e6db74>&#39;#&#39;</span><span style=color:#f92672>)</span> <span style=color:#f92672>{</span>
+</span></span><span style=display:flex><span>                <span style=color:#66d9ef>break</span><span style=color:#f92672>;</span>
+</span></span><span style=display:flex><span>            <span style=color:#f92672>}</span>
+</span></span><span style=display:flex><span>            maze<span style=color:#f92672>[</span>n<span style=color:#f92672>][</span>n2<span style=color:#f92672>]</span> <span style=color:#f92672>=</span> <span style=color:#e6db74>&#39; &#39;</span><span style=color:#f92672>;</span>
+</span></span><span style=display:flex><span>            maze<span style=color:#f92672>[</span>n<span style=color:#f92672>][++</span>n2<span style=color:#f92672>]</span> <span style=color:#f92672>=</span> <span style=color:#e6db74>&#39;X&#39;</span><span style=color:#f92672>;</span>
+</span></span><span style=display:flex><span>        <span style=color:#f92672>}</span>
+</span></span><span style=display:flex><span>        <span style=color:#66d9ef>if</span> <span style=color:#f92672>(</span>char1 <span style=color:#f92672>==</span> <span style=color:#e6db74>&#39;C&#39;</span><span style=color:#f92672>)</span> <span style=color:#f92672>{</span>
+</span></span><span style=display:flex><span>            <span style=color:#66d9ef>if</span> <span style=color:#f92672>(</span>maze<span style=color:#f92672>[</span>n <span style=color:#f92672>+</span> <span style=color:#ae81ff>1</span><span style=color:#f92672>][</span>n2 <span style=color:#f92672>+</span> <span style=color:#ae81ff>1</span><span style=color:#f92672>]</span> <span style=color:#f92672>==</span> <span style=color:#e6db74>&#39;#&#39;</span><span style=color:#f92672>)</span> <span style=color:#f92672>{</span>
+</span></span><span style=display:flex><span>                <span style=color:#66d9ef>break</span><span style=color:#f92672>;</span>
+</span></span><span style=display:flex><span>            <span style=color:#f92672>}</span>
+</span></span><span style=display:flex><span>            maze<span style=color:#f92672>[</span>n<span style=color:#f92672>][</span>n2<span style=color:#f92672>]</span> <span style=color:#f92672>=</span> <span style=color:#e6db74>&#39; &#39;</span><span style=color:#f92672>;</span>
+</span></span><span style=display:flex><span>            maze<span style=color:#f92672>[++</span>n<span style=color:#f92672>][++</span>n2<span style=color:#f92672>]</span> <span style=color:#f92672>=</span> <span style=color:#e6db74>&#39;X&#39;</span><span style=color:#f92672>;</span>
+</span></span><span style=display:flex><span>        <span style=color:#f92672>}</span>
+</span></span><span style=display:flex><span>        <span style=color:#66d9ef>if</span> <span style=color:#f92672>(</span>char1 <span style=color:#f92672>==</span> <span style=color:#e6db74>&#39;S&#39;</span><span style=color:#f92672>)</span> <span style=color:#f92672>{</span>
+</span></span><span style=display:flex><span>            <span style=color:#66d9ef>if</span> <span style=color:#f92672>(</span>maze<span style=color:#f92672>[</span>n <span style=color:#f92672>+</span> <span style=color:#ae81ff>1</span><span style=color:#f92672>][</span>n2<span style=color:#f92672>]</span> <span style=color:#f92672>==</span> <span style=color:#e6db74>&#39;#&#39;</span><span style=color:#f92672>)</span> <span style=color:#f92672>{</span>
+</span></span><span style=display:flex><span>                <span style=color:#66d9ef>break</span><span style=color:#f92672>;</span>
+</span></span><span style=display:flex><span>            <span style=color:#f92672>}</span>
+</span></span><span style=display:flex><span>            maze<span style=color:#f92672>[</span>n<span style=color:#f92672>][</span>n2<span style=color:#f92672>]</span> <span style=color:#f92672>=</span> <span style=color:#e6db74>&#39; &#39;</span><span style=color:#f92672>;</span>
+</span></span><span style=display:flex><span>            maze<span style=color:#f92672>[++</span>n<span style=color:#f92672>][</span>n2<span style=color:#f92672>]</span> <span style=color:#f92672>=</span> <span style=color:#e6db74>&#39;X&#39;</span><span style=color:#f92672>;</span>
+</span></span><span style=display:flex><span>        <span style=color:#f92672>}</span>
+</span></span><span style=display:flex><span>        <span style=color:#66d9ef>if</span> <span style=color:#f92672>(</span>char1 <span style=color:#f92672>==</span> <span style=color:#e6db74>&#39;Z&#39;</span><span style=color:#f92672>)</span> <span style=color:#f92672>{</span>
+</span></span><span style=display:flex><span>            <span style=color:#66d9ef>if</span> <span style=color:#f92672>(</span>maze<span style=color:#f92672>[</span>n <span style=color:#f92672>+</span> <span style=color:#ae81ff>1</span><span style=color:#f92672>][</span>n2 <span style=color:#f92672>-</span> <span style=color:#ae81ff>1</span><span style=color:#f92672>]</span> <span style=color:#f92672>==</span> <span style=color:#e6db74>&#39;#&#39;</span><span style=color:#f92672>)</span> <span style=color:#f92672>{</span>
+</span></span><span style=display:flex><span>                <span style=color:#66d9ef>break</span><span style=color:#f92672>;</span>
+</span></span><span style=display:flex><span>            <span style=color:#f92672>}</span>
+</span></span><span style=display:flex><span>            maze<span style=color:#f92672>[</span>n<span style=color:#f92672>][</span>n2<span style=color:#f92672>]</span> <span style=color:#f92672>=</span> <span style=color:#e6db74>&#39; &#39;</span><span style=color:#f92672>;</span>
+</span></span><span style=display:flex><span>            maze<span style=color:#f92672>[++</span>n<span style=color:#f92672>][--</span>n2<span style=color:#f92672>]</span> <span style=color:#f92672>=</span> <span style=color:#e6db74>&#39;X&#39;</span><span style=color:#f92672>;</span>
+</span></span><span style=display:flex><span>        <span style=color:#f92672>}</span>
+</span></span><span style=display:flex><span>        <span style=color:#66d9ef>if</span> <span style=color:#f92672>(</span>char1 <span style=color:#f92672>==</span> <span style=color:#e6db74>&#39;A&#39;</span><span style=color:#f92672>)</span> <span style=color:#f92672>{</span>
+</span></span><span style=display:flex><span>            <span style=color:#66d9ef>if</span> <span style=color:#f92672>(</span>maze<span style=color:#f92672>[</span>n<span style=color:#f92672>][</span>n2 <span style=color:#f92672>-</span> <span style=color:#ae81ff>1</span><span style=color:#f92672>]</span> <span style=color:#f92672>==</span> <span style=color:#e6db74>&#39;#&#39;</span><span style=color:#f92672>)</span> <span style=color:#f92672>{</span>
+</span></span><span style=display:flex><span>                <span style=color:#66d9ef>break</span><span style=color:#f92672>;</span>
+</span></span><span style=display:flex><span>            <span style=color:#f92672>}</span>
+</span></span><span style=display:flex><span>            maze<span style=color:#f92672>[</span>n<span style=color:#f92672>][</span>n2<span style=color:#f92672>]</span> <span style=color:#f92672>=</span> <span style=color:#e6db74>&#39; &#39;</span><span style=color:#f92672>;</span>
+</span></span><span style=display:flex><span>            maze<span style=color:#f92672>[</span>n<span style=color:#f92672>][--</span>n2<span style=color:#f92672>]</span> <span style=color:#f92672>=</span> <span style=color:#e6db74>&#39;X&#39;</span><span style=color:#f92672>;</span>
+</span></span><span style=display:flex><span>        <span style=color:#f92672>}</span>
+</span></span><span style=display:flex><span>        <span style=color:#66d9ef>if</span> <span style=color:#f92672>(</span>char1 <span style=color:#f92672>==</span> <span style=color:#e6db74>&#39;R&#39;</span><span style=color:#f92672>)</span> <span style=color:#f92672>{</span>
+</span></span><span style=display:flex><span>            System<span style=color:#f92672>.</span><span style=color:#a6e22e>out</span><span style=color:#f92672>.</span><span style=color:#a6e22e>println</span><span style=color:#f92672>(</span><span style=color:#e6db74>&#34;Here is a random number for you since i&#39;m nice: &#34;</span> <span style=color:#f92672>+</span> random<span style=color:#f92672>.</span><span style=color:#a6e22e>nextDouble</span><span style=color:#f92672>());</span>
+</span></span><span style=display:flex><span>        <span style=color:#f92672>}</span>
+</span></span><span style=display:flex><span>    <span style=color:#f92672>}</span>
+</span></span><span style=display:flex><span>    scanner<span style=color:#f92672>.</span><span style=color:#a6e22e>close</span><span style=color:#f92672>();</span>
+</span></span><span style=display:flex><span>    System<span style=color:#f92672>.</span><span style=color:#a6e22e>out</span><span style=color:#f92672>.</span><span style=color:#a6e22e>println</span><span style=color:#f92672>(</span><span style=color:#e6db74>&#34;YOU LOSE I WIN! BETTER LUCK NEXT TIME!&#34;</span><span style=color:#f92672>);</span>
+</span></span><span style=display:flex><span><span style=color:#f92672>}</span>
+</span></span></code></pre></div><p>This while true loop implements a basic movement system that looks like this:</p><pre tabindex=0><code>QWE
+A D
+ZSC
+</code></pre><p>Where <code>Q</code> moves up and to the left, <code>W</code> just moves up, and so on. If we ever move onto a <code>#</code>, the loop ends and the program exits. This means we have to somehow escape the maze without ever touching a <code>#</code>.</p><p>We also have a special input, <code>R</code>, that gives us a randomly generated double. <em>Hmm, I wonder how this could help us&mldr;</em></p><p>Let&rsquo;s look at the final part of the code, <code>initMap</code>:</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-java data-lang=java><span style=display:flex><span><span style=color:#66d9ef>public</span> <span style=color:#66d9ef>static</span> <span style=color:#66d9ef>void</span> <span style=color:#a6e22e>initMap</span><span style=color:#f92672>()</span> <span style=color:#f92672>{</span>
+</span></span><span style=display:flex><span>    System<span style=color:#f92672>.</span><span style=color:#a6e22e>out</span><span style=color:#f92672>.</span><span style=color:#a6e22e>println</span><span style=color:#f92672>(</span><span style=color:#e6db74>&#34;I&#39;ve learned from my mistakes and this time I will construct a full maze you will never be able to break out of!!!&#34;</span><span style=color:#f92672>);</span>
+</span></span><span style=display:flex><span>    maze <span style=color:#f92672>=</span> <span style=color:#66d9ef>new</span> <span style=color:#66d9ef>char</span><span style=color:#f92672>[</span><span style=color:#ae81ff>41</span><span style=color:#f92672>][</span><span style=color:#ae81ff>41</span><span style=color:#f92672>];</span>
+</span></span><span style=display:flex><span>    <span style=color:#66d9ef>for</span> <span style=color:#f92672>(</span><span style=color:#66d9ef>int</span> i <span style=color:#f92672>=</span> <span style=color:#ae81ff>1</span><span style=color:#f92672>;</span> i <span style=color:#f92672>&lt;=</span> <span style=color:#ae81ff>20</span><span style=color:#f92672>;</span> <span style=color:#f92672>++</span>i<span style=color:#f92672>)</span> <span style=color:#f92672>{</span>
+</span></span><span style=display:flex><span>        <span style=color:#66d9ef>if</span> <span style=color:#f92672>(</span>i <span style=color:#f92672>%</span> <span style=color:#ae81ff>2</span> <span style=color:#f92672>==</span> <span style=color:#ae81ff>1</span><span style=color:#f92672>)</span> <span style=color:#f92672>{</span>
+</span></span><span style=display:flex><span>            <span style=color:#66d9ef>for</span> <span style=color:#f92672>(</span><span style=color:#66d9ef>int</span> j <span style=color:#f92672>=</span> <span style=color:#ae81ff>20</span> <span style=color:#f92672>-</span> i<span style=color:#f92672>;</span> j <span style=color:#f92672>&lt;=</span> <span style=color:#ae81ff>20</span> <span style=color:#f92672>+</span> i<span style=color:#f92672>;</span> <span style=color:#f92672>++</span>j<span style=color:#f92672>)</span> <span style=color:#f92672>{</span>
+</span></span><span style=display:flex><span>                <span style=color:#66d9ef>for</span> <span style=color:#f92672>(</span><span style=color:#66d9ef>int</span> k <span style=color:#f92672>=</span> <span style=color:#ae81ff>20</span> <span style=color:#f92672>-</span> i<span style=color:#f92672>;</span> k <span style=color:#f92672>&lt;=</span> <span style=color:#ae81ff>20</span> <span style=color:#f92672>+</span> i<span style=color:#f92672>;</span> <span style=color:#f92672>++</span>k<span style=color:#f92672>)</span> <span style=color:#f92672>{</span>
+</span></span><span style=display:flex><span>                    <span style=color:#66d9ef>if</span> <span style=color:#f92672>(</span>j <span style=color:#f92672>==</span> <span style=color:#ae81ff>20</span> <span style=color:#f92672>-</span> i <span style=color:#f92672>||</span> j <span style=color:#f92672>==</span> <span style=color:#ae81ff>20</span> <span style=color:#f92672>+</span> i <span style=color:#f92672>||</span> k <span style=color:#f92672>==</span> <span style=color:#ae81ff>20</span> <span style=color:#f92672>-</span> i <span style=color:#f92672>||</span> k <span style=color:#f92672>==</span> <span style=color:#ae81ff>20</span> <span style=color:#f92672>+</span> i<span style=color:#f92672>)</span> <span style=color:#f92672>{</span>
+</span></span><span style=display:flex><span>                        maze<span style=color:#f92672>[</span>j<span style=color:#f92672>][</span>k<span style=color:#f92672>]</span> <span style=color:#f92672>=</span> <span style=color:#e6db74>&#39;#&#39;</span><span style=color:#f92672>;</span>
+</span></span><span style=display:flex><span>                    <span style=color:#f92672>}</span>
+</span></span><span style=display:flex><span>                <span style=color:#f92672>}</span>
+</span></span><span style=display:flex><span>            <span style=color:#f92672>}</span>
+</span></span><span style=display:flex><span>        <span style=color:#f92672>}</span>
+</span></span><span style=display:flex><span>    <span style=color:#f92672>}</span>
+</span></span><span style=display:flex><span>    <span style=color:#66d9ef>for</span> <span style=color:#f92672>(</span><span style=color:#66d9ef>int</span> l <span style=color:#f92672>=</span> <span style=color:#ae81ff>0</span><span style=color:#f92672>;</span> l <span style=color:#f92672>&lt;</span> maze<span style=color:#f92672>.</span><span style=color:#a6e22e>length</span><span style=color:#f92672>;</span> <span style=color:#f92672>++</span>l<span style=color:#f92672>)</span> <span style=color:#f92672>{</span>
+</span></span><span style=display:flex><span>        <span style=color:#66d9ef>for</span> <span style=color:#f92672>(</span><span style=color:#66d9ef>int</span> n <span style=color:#f92672>=</span> <span style=color:#ae81ff>0</span><span style=color:#f92672>;</span> n <span style=color:#f92672>&lt;</span> maze<span style=color:#f92672>[</span>l<span style=color:#f92672>].</span><span style=color:#a6e22e>length</span><span style=color:#f92672>;</span> <span style=color:#f92672>++</span>n<span style=color:#f92672>)</span> <span style=color:#f92672>{</span>
+</span></span><span style=display:flex><span>            <span style=color:#66d9ef>if</span> <span style=color:#f92672>(</span>maze<span style=color:#f92672>[</span>l<span style=color:#f92672>][</span>n<span style=color:#f92672>]</span> <span style=color:#f92672>!=</span> <span style=color:#e6db74>&#39;#&#39;</span><span style=color:#f92672>)</span> <span style=color:#f92672>{</span>
+</span></span><span style=display:flex><span>                maze<span style=color:#f92672>[</span>l<span style=color:#f92672>][</span>n<span style=color:#f92672>]</span> <span style=color:#f92672>=</span> <span style=color:#e6db74>&#39; &#39;</span><span style=color:#f92672>;</span>
+</span></span><span style=display:flex><span>            <span style=color:#f92672>}</span>
+</span></span><span style=display:flex><span>            System<span style=color:#f92672>.</span><span style=color:#a6e22e>out</span><span style=color:#f92672>.</span><span style=color:#a6e22e>print</span><span style=color:#f92672>(</span>maze<span style=color:#f92672>[</span>l<span style=color:#f92672>][</span>n<span style=color:#f92672>]);</span>
+</span></span><span style=display:flex><span>        <span style=color:#f92672>}</span>
+</span></span><span style=display:flex><span>        System<span style=color:#f92672>.</span><span style=color:#a6e22e>out</span><span style=color:#f92672>.</span><span style=color:#a6e22e>println</span><span style=color:#f92672>();</span>
+</span></span><span style=display:flex><span>    <span style=color:#f92672>}</span>
+</span></span><span style=display:flex><span>    <span style=color:#66d9ef>for</span> <span style=color:#f92672>(</span><span style=color:#66d9ef>int</span> n2 <span style=color:#f92672>=</span> <span style=color:#ae81ff>0</span><span style=color:#f92672>;</span> n2 <span style=color:#f92672>&lt;</span> <span style=color:#ae81ff>10</span><span style=color:#f92672>;</span> <span style=color:#f92672>++</span>n2<span style=color:#f92672>)</span> <span style=color:#f92672>{</span>
+</span></span><span style=display:flex><span>        <span style=color:#66d9ef>final</span> <span style=color:#66d9ef>int</span> bound <span style=color:#f92672>=</span> <span style=color:#ae81ff>3</span> <span style=color:#f92672>+</span> n2 <span style=color:#f92672>*</span> <span style=color:#ae81ff>4</span><span style=color:#f92672>;</span>
+</span></span><span style=display:flex><span>        <span style=color:#66d9ef>final</span> <span style=color:#66d9ef>int</span> nextInt <span style=color:#f92672>=</span> random<span style=color:#f92672>.</span><span style=color:#a6e22e>nextInt</span><span style=color:#f92672>(</span>bound<span style=color:#f92672>);</span>
+</span></span><span style=display:flex><span>        <span style=color:#66d9ef>switch</span> <span style=color:#f92672>(</span>random<span style=color:#f92672>.</span><span style=color:#a6e22e>nextInt</span><span style=color:#f92672>(</span><span style=color:#ae81ff>4</span><span style=color:#f92672>))</span> <span style=color:#f92672>{</span>
+</span></span><span style=display:flex><span>            <span style=color:#66d9ef>case</span> <span style=color:#ae81ff>0</span><span style=color:#f92672>:</span> <span style=color:#f92672>{</span>
+</span></span><span style=display:flex><span>                maze<span style=color:#f92672>[</span><span style=color:#ae81ff>20</span> <span style=color:#f92672>+</span> bound <span style=color:#f92672>/</span> <span style=color:#ae81ff>2</span><span style=color:#f92672>][</span><span style=color:#ae81ff>20</span> <span style=color:#f92672>-</span> bound <span style=color:#f92672>/</span> <span style=color:#ae81ff>2</span> <span style=color:#f92672>+</span> nextInt<span style=color:#f92672>]</span> <span style=color:#f92672>=</span> <span style=color:#e6db74>&#39; &#39;</span><span style=color:#f92672>;</span>
+</span></span><span style=display:flex><span>                <span style=color:#66d9ef>break</span><span style=color:#f92672>;</span>
+</span></span><span style=display:flex><span>            <span style=color:#f92672>}</span>
+</span></span><span style=display:flex><span>            <span style=color:#66d9ef>case</span> <span style=color:#ae81ff>1</span><span style=color:#f92672>:</span> <span style=color:#f92672>{</span>
+</span></span><span style=display:flex><span>                maze<span style=color:#f92672>[</span><span style=color:#ae81ff>20</span> <span style=color:#f92672>-</span> bound <span style=color:#f92672>/</span> <span style=color:#ae81ff>2</span> <span style=color:#f92672>+</span> nextInt<span style=color:#f92672>][</span><span style=color:#ae81ff>20</span> <span style=color:#f92672>+</span> bound <span style=color:#f92672>/</span> <span style=color:#ae81ff>2</span><span style=color:#f92672>]</span> <span style=color:#f92672>=</span> <span style=color:#e6db74>&#39; &#39;</span><span style=color:#f92672>;</span>
+</span></span><span style=display:flex><span>                <span style=color:#66d9ef>break</span><span style=color:#f92672>;</span>
+</span></span><span style=display:flex><span>            <span style=color:#f92672>}</span>
+</span></span><span style=display:flex><span>            <span style=color:#66d9ef>case</span> <span style=color:#ae81ff>2</span><span style=color:#f92672>:</span> <span style=color:#f92672>{</span>
+</span></span><span style=display:flex><span>                maze<span style=color:#f92672>[</span><span style=color:#ae81ff>20</span> <span style=color:#f92672>-</span> bound <span style=color:#f92672>/</span> <span style=color:#ae81ff>2</span><span style=color:#f92672>][</span><span style=color:#ae81ff>20</span> <span style=color:#f92672>-</span> bound <span style=color:#f92672>/</span> <span style=color:#ae81ff>2</span> <span style=color:#f92672>+</span> nextInt<span style=color:#f92672>]</span> <span style=color:#f92672>=</span> <span style=color:#e6db74>&#39; &#39;</span><span style=color:#f92672>;</span>
+</span></span><span style=display:flex><span>                <span style=color:#66d9ef>break</span><span style=color:#f92672>;</span>
+</span></span><span style=display:flex><span>            <span style=color:#f92672>}</span>
+</span></span><span style=display:flex><span>            <span style=color:#66d9ef>case</span> <span style=color:#ae81ff>3</span><span style=color:#f92672>:</span> <span style=color:#f92672>{</span>
+</span></span><span style=display:flex><span>                maze<span style=color:#f92672>[</span><span style=color:#ae81ff>20</span> <span style=color:#f92672>-</span> bound <span style=color:#f92672>/</span> <span style=color:#ae81ff>2</span> <span style=color:#f92672>+</span> nextInt<span style=color:#f92672>][</span><span style=color:#ae81ff>20</span> <span style=color:#f92672>-</span> bound <span style=color:#f92672>/</span> <span style=color:#ae81ff>2</span><span style=color:#f92672>]</span> <span style=color:#f92672>=</span> <span style=color:#e6db74>&#39; &#39;</span><span style=color:#f92672>;</span>
+</span></span><span style=display:flex><span>                <span style=color:#66d9ef>break</span><span style=color:#f92672>;</span>
+</span></span><span style=display:flex><span>            <span style=color:#f92672>}</span>
+</span></span><span style=display:flex><span>        <span style=color:#f92672>}</span>
+</span></span><span style=display:flex><span>    <span style=color:#f92672>}</span>
+</span></span><span style=display:flex><span>    maze<span style=color:#f92672>[</span><span style=color:#ae81ff>20</span><span style=color:#f92672>][</span><span style=color:#ae81ff>20</span><span style=color:#f92672>]</span> <span style=color:#f92672>=</span> <span style=color:#e6db74>&#39;X&#39;</span><span style=color:#f92672>;</span>
+</span></span><span style=display:flex><span><span style=color:#f92672>}</span>
+</span></span></code></pre></div><p>First, we have the actual maze generation:</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-java data-lang=java><span style=display:flex><span>maze <span style=color:#f92672>=</span> <span style=color:#66d9ef>new</span> <span style=color:#66d9ef>char</span><span style=color:#f92672>[</span><span style=color:#ae81ff>41</span><span style=color:#f92672>][</span><span style=color:#ae81ff>41</span><span style=color:#f92672>];</span>
+</span></span><span style=display:flex><span><span style=color:#66d9ef>for</span> <span style=color:#f92672>(</span><span style=color:#66d9ef>int</span> i <span style=color:#f92672>=</span> <span style=color:#ae81ff>1</span><span style=color:#f92672>;</span> i <span style=color:#f92672>&lt;=</span> <span style=color:#ae81ff>20</span><span style=color:#f92672>;</span> <span style=color:#f92672>++</span>i<span style=color:#f92672>)</span> <span style=color:#f92672>{</span>
+</span></span><span style=display:flex><span>    <span style=color:#66d9ef>if</span> <span style=color:#f92672>(</span>i <span style=color:#f92672>%</span> <span style=color:#ae81ff>2</span> <span style=color:#f92672>==</span> <span style=color:#ae81ff>1</span><span style=color:#f92672>)</span> <span style=color:#f92672>{</span>
+</span></span><span style=display:flex><span>        <span style=color:#66d9ef>for</span> <span style=color:#f92672>(</span><span style=color:#66d9ef>int</span> j <span style=color:#f92672>=</span> <span style=color:#ae81ff>20</span> <span style=color:#f92672>-</span> i<span style=color:#f92672>;</span> j <span style=color:#f92672>&lt;=</span> <span style=color:#ae81ff>20</span> <span style=color:#f92672>+</span> i<span style=color:#f92672>;</span> <span style=color:#f92672>++</span>j<span style=color:#f92672>)</span> <span style=color:#f92672>{</span>
+</span></span><span style=display:flex><span>            <span style=color:#66d9ef>for</span> <span style=color:#f92672>(</span><span style=color:#66d9ef>int</span> k <span style=color:#f92672>=</span> <span style=color:#ae81ff>20</span> <span style=color:#f92672>-</span> i<span style=color:#f92672>;</span> k <span style=color:#f92672>&lt;=</span> <span style=color:#ae81ff>20</span> <span style=color:#f92672>+</span> i<span style=color:#f92672>;</span> <span style=color:#f92672>++</span>k<span style=color:#f92672>)</span> <span style=color:#f92672>{</span>
+</span></span><span style=display:flex><span>                <span style=color:#66d9ef>if</span> <span style=color:#f92672>(</span>j <span style=color:#f92672>==</span> <span style=color:#ae81ff>20</span> <span style=color:#f92672>-</span> i <span style=color:#f92672>||</span> j <span style=color:#f92672>==</span> <span style=color:#ae81ff>20</span> <span style=color:#f92672>+</span> i <span style=color:#f92672>||</span> k <span style=color:#f92672>==</span> <span style=color:#ae81ff>20</span> <span style=color:#f92672>-</span> i <span style=color:#f92672>||</span> k <span style=color:#f92672>==</span> <span style=color:#ae81ff>20</span> <span style=color:#f92672>+</span> i<span style=color:#f92672>)</span> <span style=color:#f92672>{</span>
+</span></span><span style=display:flex><span>                    maze<span style=color:#f92672>[</span>j<span style=color:#f92672>][</span>k<span style=color:#f92672>]</span> <span style=color:#f92672>=</span> <span style=color:#e6db74>&#39;#&#39;</span><span style=color:#f92672>;</span>
+</span></span><span style=display:flex><span>                <span style=color:#f92672>}</span>
+</span></span><span style=display:flex><span>            <span style=color:#f92672>}</span>
+</span></span><span style=display:flex><span>        <span style=color:#f92672>}</span>
+</span></span><span style=display:flex><span>    <span style=color:#f92672>}</span>
+</span></span><span style=display:flex><span><span style=color:#f92672>}</span>
+</span></span></code></pre></div><p>Then, the maze gets printed out. This should be the first thing we see when we connect to the server, so let&rsquo;s do that as well as see what we get.</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-java data-lang=java><span style=display:flex><span><span style=color:#66d9ef>for</span> <span style=color:#f92672>(</span><span style=color:#66d9ef>int</span> l <span style=color:#f92672>=</span> <span style=color:#ae81ff>0</span><span style=color:#f92672>;</span> l <span style=color:#f92672>&lt;</span> maze<span style=color:#f92672>.</span><span style=color:#a6e22e>length</span><span style=color:#f92672>;</span> <span style=color:#f92672>++</span>l<span style=color:#f92672>)</span> <span style=color:#f92672>{</span>
+</span></span><span style=display:flex><span>    <span style=color:#66d9ef>for</span> <span style=color:#f92672>(</span><span style=color:#66d9ef>int</span> n <span style=color:#f92672>=</span> <span style=color:#ae81ff>0</span><span style=color:#f92672>;</span> n <span style=color:#f92672>&lt;</span> maze<span style=color:#f92672>[</span>l<span style=color:#f92672>].</span><span style=color:#a6e22e>length</span><span style=color:#f92672>;</span> <span style=color:#f92672>++</span>n<span style=color:#f92672>)</span> <span style=color:#f92672>{</span>
+</span></span><span style=display:flex><span>        <span style=color:#66d9ef>if</span> <span style=color:#f92672>(</span>maze<span style=color:#f92672>[</span>l<span style=color:#f92672>][</span>n<span style=color:#f92672>]</span> <span style=color:#f92672>!=</span> <span style=color:#e6db74>&#39;#&#39;</span><span style=color:#f92672>)</span> <span style=color:#f92672>{</span>
+</span></span><span style=display:flex><span>            maze<span style=color:#f92672>[</span>l<span style=color:#f92672>][</span>n<span style=color:#f92672>]</span> <span style=color:#f92672>=</span> <span style=color:#e6db74>&#39; &#39;</span><span style=color:#f92672>;</span>
+</span></span><span style=display:flex><span>        <span style=color:#f92672>}</span>
+</span></span><span style=display:flex><span>        System<span style=color:#f92672>.</span><span style=color:#a6e22e>out</span><span style=color:#f92672>.</span><span style=color:#a6e22e>print</span><span style=color:#f92672>(</span>maze<span style=color:#f92672>[</span>l<span style=color:#f92672>][</span>n<span style=color:#f92672>]);</span>
+</span></span><span style=display:flex><span>    <span style=color:#f92672>}</span>
+</span></span><span style=display:flex><span>    System<span style=color:#f92672>.</span><span style=color:#a6e22e>out</span><span style=color:#f92672>.</span><span style=color:#a6e22e>println</span><span style=color:#f92672>();</span>
+</span></span><span style=display:flex><span><span style=color:#f92672>}</span>
+</span></span></code></pre></div><pre tabindex=0><code class=language-terminal data-lang=terminal>$ 213.133.103.186 31851
+I&#39;ve learned from my mistakes and this time I will construct a full maze you will never be able to break out of!!!
+                                         
+ ####################################### 
+ #                                     # 
+ # ################################### # 
+ # #                                 # # 
+ # # ############################### # # 
+ # # #                             # # # 
+ # # # ########################### # # # 
+ # # # #                         # # # # 
+ # # # # ####################### # # # # 
+ # # # # #                     # # # # # 
+ # # # # # ################### # # # # # 
+ # # # # # #                 # # # # # # 
+ # # # # # # ############### # # # # # # 
+ # # # # # # #             # # # # # # # 
+ # # # # # # # ########### # # # # # # # 
+ # # # # # # # #         # # # # # # # # 
+ # # # # # # # # ####### # # # # # # # # 
+ # # # # # # # # #     # # # # # # # # # 
+ # # # # # # # # # ### # # # # # # # # # 
+ # # # # # # # # # # # # # # # # # # # # 
+ # # # # # # # # # ### # # # # # # # # # 
+ # # # # # # # # #     # # # # # # # # # 
+ # # # # # # # # ####### # # # # # # # # 
+ # # # # # # # #         # # # # # # # # 
+ # # # # # # # ########### # # # # # # # 
+ # # # # # # #             # # # # # # # 
+ # # # # # # ############### # # # # # # 
+ # # # # # #                 # # # # # # 
+ # # # # # ################### # # # # # 
+ # # # # #                     # # # # # 
+ # # # # ####################### # # # # 
+ # # # #                         # # # # 
+ # # # ########################### # # # 
+ # # #                             # # # 
+ # # ############################### # # 
+ # #                                 # # 
+ # ################################### # 
+ #                                     # 
+ ####################################### 
+                                         
+</code></pre><p>Note the extra wrapper of spaces on all 4 sides of the grid. That should be the area we are trying to reach, as any outward movement in that wrapper should move us out of bounds and throw the necessary error needed to get the flag.</p><p>But how do we get out of these concentric walls?</p><p>Well, there&rsquo;s one last part to the challenge. Remember how we&rsquo;re given <code>random.nextDouble</code> outputs? This is where that finally comes into play.</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-java data-lang=java><span style=display:flex><span><span style=color:#66d9ef>for</span> <span style=color:#f92672>(</span><span style=color:#66d9ef>int</span> n2 <span style=color:#f92672>=</span> <span style=color:#ae81ff>0</span><span style=color:#f92672>;</span> n2 <span style=color:#f92672>&lt;</span> <span style=color:#ae81ff>10</span><span style=color:#f92672>;</span> <span style=color:#f92672>++</span>n2<span style=color:#f92672>)</span> <span style=color:#f92672>{</span>
+</span></span><span style=display:flex><span>    <span style=color:#66d9ef>final</span> <span style=color:#66d9ef>int</span> bound <span style=color:#f92672>=</span> <span style=color:#ae81ff>3</span> <span style=color:#f92672>+</span> n2 <span style=color:#f92672>*</span> <span style=color:#ae81ff>4</span><span style=color:#f92672>;</span>
+</span></span><span style=display:flex><span>    <span style=color:#66d9ef>final</span> <span style=color:#66d9ef>int</span> nextInt <span style=color:#f92672>=</span> random<span style=color:#f92672>.</span><span style=color:#a6e22e>nextInt</span><span style=color:#f92672>(</span>bound<span style=color:#f92672>);</span>
+</span></span><span style=display:flex><span>    <span style=color:#66d9ef>switch</span> <span style=color:#f92672>(</span>random<span style=color:#f92672>.</span><span style=color:#a6e22e>nextInt</span><span style=color:#f92672>(</span><span style=color:#ae81ff>4</span><span style=color:#f92672>))</span> <span style=color:#f92672>{</span>
+</span></span><span style=display:flex><span>        <span style=color:#66d9ef>case</span> <span style=color:#ae81ff>0</span><span style=color:#f92672>:</span> <span style=color:#f92672>{</span>
+</span></span><span style=display:flex><span>            maze<span style=color:#f92672>[</span><span style=color:#ae81ff>20</span> <span style=color:#f92672>+</span> bound <span style=color:#f92672>/</span> <span style=color:#ae81ff>2</span><span style=color:#f92672>][</span><span style=color:#ae81ff>20</span> <span style=color:#f92672>-</span> bound <span style=color:#f92672>/</span> <span style=color:#ae81ff>2</span> <span style=color:#f92672>+</span> nextInt<span style=color:#f92672>]</span> <span style=color:#f92672>=</span> <span style=color:#e6db74>&#39; &#39;</span><span style=color:#f92672>;</span>
+</span></span><span style=display:flex><span>            <span style=color:#66d9ef>break</span><span style=color:#f92672>;</span>
+</span></span><span style=display:flex><span>        <span style=color:#f92672>}</span>
+</span></span><span style=display:flex><span>        <span style=color:#66d9ef>case</span> <span style=color:#ae81ff>1</span><span style=color:#f92672>:</span> <span style=color:#f92672>{</span>
+</span></span><span style=display:flex><span>            maze<span style=color:#f92672>[</span><span style=color:#ae81ff>20</span> <span style=color:#f92672>-</span> bound <span style=color:#f92672>/</span> <span style=color:#ae81ff>2</span> <span style=color:#f92672>+</span> nextInt<span style=color:#f92672>][</span><span style=color:#ae81ff>20</span> <span style=color:#f92672>+</span> bound <span style=color:#f92672>/</span> <span style=color:#ae81ff>2</span><span style=color:#f92672>]</span> <span style=color:#f92672>=</span> <span style=color:#e6db74>&#39; &#39;</span><span style=color:#f92672>;</span>
+</span></span><span style=display:flex><span>            <span style=color:#66d9ef>break</span><span style=color:#f92672>;</span>
+</span></span><span style=display:flex><span>        <span style=color:#f92672>}</span>
+</span></span><span style=display:flex><span>        <span style=color:#66d9ef>case</span> <span style=color:#ae81ff>2</span><span style=color:#f92672>:</span> <span style=color:#f92672>{</span>
+</span></span><span style=display:flex><span>            maze<span style=color:#f92672>[</span><span style=color:#ae81ff>20</span> <span style=color:#f92672>-</span> bound <span style=color:#f92672>/</span> <span style=color:#ae81ff>2</span><span style=color:#f92672>][</span><span style=color:#ae81ff>20</span> <span style=color:#f92672>-</span> bound <span style=color:#f92672>/</span> <span style=color:#ae81ff>2</span> <span style=color:#f92672>+</span> nextInt<span style=color:#f92672>]</span> <span style=color:#f92672>=</span> <span style=color:#e6db74>&#39; &#39;</span><span style=color:#f92672>;</span>
+</span></span><span style=display:flex><span>            <span style=color:#66d9ef>break</span><span style=color:#f92672>;</span>
+</span></span><span style=display:flex><span>        <span style=color:#f92672>}</span>
+</span></span><span style=display:flex><span>        <span style=color:#66d9ef>case</span> <span style=color:#ae81ff>3</span><span style=color:#f92672>:</span> <span style=color:#f92672>{</span>
+</span></span><span style=display:flex><span>            maze<span style=color:#f92672>[</span><span style=color:#ae81ff>20</span> <span style=color:#f92672>-</span> bound <span style=color:#f92672>/</span> <span style=color:#ae81ff>2</span> <span style=color:#f92672>+</span> nextInt<span style=color:#f92672>][</span><span style=color:#ae81ff>20</span> <span style=color:#f92672>-</span> bound <span style=color:#f92672>/</span> <span style=color:#ae81ff>2</span><span style=color:#f92672>]</span> <span style=color:#f92672>=</span> <span style=color:#e6db74>&#39; &#39;</span><span style=color:#f92672>;</span>
+</span></span><span style=display:flex><span>            <span style=color:#66d9ef>break</span><span style=color:#f92672>;</span>
+</span></span><span style=display:flex><span>        <span style=color:#f92672>}</span>
+</span></span><span style=display:flex><span>    <span style=color:#f92672>}</span>
+</span></span><span style=display:flex><span><span style=color:#f92672>}</span>
+</span></span></code></pre></div><p>(Oh, and the last line just sets <code>maze[20][20]</code> to the player)</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-java data-lang=java><span style=display:flex><span>maze<span style=color:#f92672>[</span><span style=color:#ae81ff>20</span><span style=color:#f92672>][</span><span style=color:#ae81ff>20</span><span style=color:#f92672>]</span> <span style=color:#f92672>=</span> <span style=color:#e6db74>&#39;X&#39;</span><span style=color:#f92672>;</span>
+</span></span></code></pre></div><p>Anyways, back to the random part. We loop 10 times, and each time, we generate a random number from a calculated bound. We also generate another rounded number bounded by 4, and from that number, we set a different part of the <code>maze</code> matrix to an empty <code>' '</code>.</p><p>Since I didn&rsquo;t want to go through the effort of reversing exacty that the calculations of bound meant, I just moved the maze printing statement to be right after this loop instead. (Remember to leave the if statement behind, as it&rsquo;s used to initialize the empty squares).</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-java data-lang=java><span style=display:flex><span><span style=color:#66d9ef>public</span> <span style=color:#66d9ef>static</span> <span style=color:#66d9ef>void</span> <span style=color:#a6e22e>initMap</span><span style=color:#f92672>()</span> <span style=color:#f92672>{</span>
+</span></span><span style=display:flex><span>    System<span style=color:#f92672>.</span><span style=color:#a6e22e>out</span><span style=color:#f92672>.</span><span style=color:#a6e22e>println</span><span style=color:#f92672>(</span><span style=color:#e6db74>&#34;I&#39;ve learned from my mistakes and this time I will construct a full maze you will never be able to break out of!!!&#34;</span><span style=color:#f92672>);</span>
+</span></span><span style=display:flex><span>    maze <span style=color:#f92672>=</span> <span style=color:#66d9ef>new</span> <span style=color:#66d9ef>char</span><span style=color:#f92672>[</span><span style=color:#ae81ff>41</span><span style=color:#f92672>][</span><span style=color:#ae81ff>41</span><span style=color:#f92672>];</span>
+</span></span><span style=display:flex><span>    <span style=color:#66d9ef>for</span> <span style=color:#f92672>(</span><span style=color:#66d9ef>int</span> i <span style=color:#f92672>=</span> <span style=color:#ae81ff>1</span><span style=color:#f92672>;</span> i <span style=color:#f92672>&lt;=</span> <span style=color:#ae81ff>20</span><span style=color:#f92672>;</span> <span style=color:#f92672>++</span>i<span style=color:#f92672>)</span> <span style=color:#f92672>{</span>
+</span></span><span style=display:flex><span>        <span style=color:#66d9ef>if</span> <span style=color:#f92672>(</span>i <span style=color:#f92672>%</span> <span style=color:#ae81ff>2</span> <span style=color:#f92672>==</span> <span style=color:#ae81ff>1</span><span style=color:#f92672>)</span> <span style=color:#f92672>{</span>
+</span></span><span style=display:flex><span>            <span style=color:#66d9ef>for</span> <span style=color:#f92672>(</span><span style=color:#66d9ef>int</span> j <span style=color:#f92672>=</span> <span style=color:#ae81ff>20</span> <span style=color:#f92672>-</span> i<span style=color:#f92672>;</span> j <span style=color:#f92672>&lt;=</span> <span style=color:#ae81ff>20</span> <span style=color:#f92672>+</span> i<span style=color:#f92672>;</span> <span style=color:#f92672>++</span>j<span style=color:#f92672>)</span> <span style=color:#f92672>{</span>
+</span></span><span style=display:flex><span>                <span style=color:#66d9ef>for</span> <span style=color:#f92672>(</span><span style=color:#66d9ef>int</span> k <span style=color:#f92672>=</span> <span style=color:#ae81ff>20</span> <span style=color:#f92672>-</span> i<span style=color:#f92672>;</span> k <span style=color:#f92672>&lt;=</span> <span style=color:#ae81ff>20</span> <span style=color:#f92672>+</span> i<span style=color:#f92672>;</span> <span style=color:#f92672>++</span>k<span style=color:#f92672>)</span> <span style=color:#f92672>{</span>
+</span></span><span style=display:flex><span>                    <span style=color:#66d9ef>if</span> <span style=color:#f92672>(</span>j <span style=color:#f92672>==</span> <span style=color:#ae81ff>20</span> <span style=color:#f92672>-</span> i <span style=color:#f92672>||</span> j <span style=color:#f92672>==</span> <span style=color:#ae81ff>20</span> <span style=color:#f92672>+</span> i <span style=color:#f92672>||</span> k <span style=color:#f92672>==</span> <span style=color:#ae81ff>20</span> <span style=color:#f92672>-</span> i <span style=color:#f92672>||</span> k <span style=color:#f92672>==</span> <span style=color:#ae81ff>20</span> <span style=color:#f92672>+</span> i<span style=color:#f92672>)</span> <span style=color:#f92672>{</span>
+</span></span><span style=display:flex><span>                        maze<span style=color:#f92672>[</span>j<span style=color:#f92672>][</span>k<span style=color:#f92672>]</span> <span style=color:#f92672>=</span> <span style=color:#e6db74>&#39;#&#39;</span><span style=color:#f92672>;</span>
+</span></span><span style=display:flex><span>                    <span style=color:#f92672>}</span>
+</span></span><span style=display:flex><span>                <span style=color:#f92672>}</span>
+</span></span><span style=display:flex><span>            <span style=color:#f92672>}</span>
+</span></span><span style=display:flex><span>        <span style=color:#f92672>}</span>
+</span></span><span style=display:flex><span>    <span style=color:#f92672>}</span>
+</span></span><span style=display:flex><span>    <span style=color:#66d9ef>for</span> <span style=color:#f92672>(</span><span style=color:#66d9ef>int</span> l <span style=color:#f92672>=</span> <span style=color:#ae81ff>0</span><span style=color:#f92672>;</span> l <span style=color:#f92672>&lt;</span> maze<span style=color:#f92672>.</span><span style=color:#a6e22e>length</span><span style=color:#f92672>;</span> <span style=color:#f92672>++</span>l<span style=color:#f92672>)</span> <span style=color:#f92672>{</span>
+</span></span><span style=display:flex><span>        <span style=color:#66d9ef>for</span> <span style=color:#f92672>(</span><span style=color:#66d9ef>int</span> n <span style=color:#f92672>=</span> <span style=color:#ae81ff>0</span><span style=color:#f92672>;</span> n <span style=color:#f92672>&lt;</span> maze<span style=color:#f92672>[</span>l<span style=color:#f92672>].</span><span style=color:#a6e22e>length</span><span style=color:#f92672>;</span> <span style=color:#f92672>++</span>n<span style=color:#f92672>)</span> <span style=color:#f92672>{</span>
+</span></span><span style=display:flex><span>            <span style=color:#66d9ef>if</span> <span style=color:#f92672>(</span>maze<span style=color:#f92672>[</span>l<span style=color:#f92672>][</span>n<span style=color:#f92672>]</span> <span style=color:#f92672>!=</span> <span style=color:#e6db74>&#39;#&#39;</span><span style=color:#f92672>)</span> <span style=color:#f92672>{</span>
+</span></span><span style=display:flex><span>                maze<span style=color:#f92672>[</span>l<span style=color:#f92672>][</span>n<span style=color:#f92672>]</span> <span style=color:#f92672>=</span> <span style=color:#e6db74>&#39; &#39;</span><span style=color:#f92672>;</span>
+</span></span><span style=display:flex><span>            <span style=color:#f92672>}</span>
+</span></span><span style=display:flex><span>        <span style=color:#f92672>}</span>
+</span></span><span style=display:flex><span>    <span style=color:#f92672>}</span>
+</span></span><span style=display:flex><span>    <span style=color:#66d9ef>for</span> <span style=color:#f92672>(</span><span style=color:#66d9ef>int</span> n2 <span style=color:#f92672>=</span> <span style=color:#ae81ff>0</span><span style=color:#f92672>;</span> n2 <span style=color:#f92672>&lt;</span> <span style=color:#ae81ff>10</span><span style=color:#f92672>;</span> <span style=color:#f92672>++</span>n2<span style=color:#f92672>)</span> <span style=color:#f92672>{</span>
+</span></span><span style=display:flex><span>        <span style=color:#66d9ef>final</span> <span style=color:#66d9ef>int</span> bound <span style=color:#f92672>=</span> <span style=color:#ae81ff>3</span> <span style=color:#f92672>+</span> n2 <span style=color:#f92672>*</span> <span style=color:#ae81ff>4</span><span style=color:#f92672>;</span>
+</span></span><span style=display:flex><span>        <span style=color:#66d9ef>final</span> <span style=color:#66d9ef>int</span> nextInt <span style=color:#f92672>=</span> random<span style=color:#f92672>.</span><span style=color:#a6e22e>nextInt</span><span style=color:#f92672>(</span>bound<span style=color:#f92672>);</span>
+</span></span><span style=display:flex><span>        <span style=color:#66d9ef>switch</span> <span style=color:#f92672>(</span>random<span style=color:#f92672>.</span><span style=color:#a6e22e>nextInt</span><span style=color:#f92672>(</span><span style=color:#ae81ff>4</span><span style=color:#f92672>))</span> <span style=color:#f92672>{</span>
+</span></span><span style=display:flex><span>            <span style=color:#66d9ef>case</span> <span style=color:#ae81ff>0</span><span style=color:#f92672>:</span> <span style=color:#f92672>{</span>
+</span></span><span style=display:flex><span>                maze<span style=color:#f92672>[</span><span style=color:#ae81ff>20</span> <span style=color:#f92672>+</span> bound <span style=color:#f92672>/</span> <span style=color:#ae81ff>2</span><span style=color:#f92672>][</span><span style=color:#ae81ff>20</span> <span style=color:#f92672>-</span> bound <span style=color:#f92672>/</span> <span style=color:#ae81ff>2</span> <span style=color:#f92672>+</span> nextInt<span style=color:#f92672>]</span> <span style=color:#f92672>=</span> <span style=color:#e6db74>&#39; &#39;</span><span style=color:#f92672>;</span>
+</span></span><span style=display:flex><span>                <span style=color:#66d9ef>break</span><span style=color:#f92672>;</span>
+</span></span><span style=display:flex><span>            <span style=color:#f92672>}</span>
+</span></span><span style=display:flex><span>            <span style=color:#66d9ef>case</span> <span style=color:#ae81ff>1</span><span style=color:#f92672>:</span> <span style=color:#f92672>{</span>
+</span></span><span style=display:flex><span>                maze<span style=color:#f92672>[</span><span style=color:#ae81ff>20</span> <span style=color:#f92672>-</span> bound <span style=color:#f92672>/</span> <span style=color:#ae81ff>2</span> <span style=color:#f92672>+</span> nextInt<span style=color:#f92672>][</span><span style=color:#ae81ff>20</span> <span style=color:#f92672>+</span> bound <span style=color:#f92672>/</span> <span style=color:#ae81ff>2</span><span style=color:#f92672>]</span> <span style=color:#f92672>=</span> <span style=color:#e6db74>&#39; &#39;</span><span style=color:#f92672>;</span>
+</span></span><span style=display:flex><span>                <span style=color:#66d9ef>break</span><span style=color:#f92672>;</span>
+</span></span><span style=display:flex><span>            <span style=color:#f92672>}</span>
+</span></span><span style=display:flex><span>            <span style=color:#66d9ef>case</span> <span style=color:#ae81ff>2</span><span style=color:#f92672>:</span> <span style=color:#f92672>{</span>
+</span></span><span style=display:flex><span>                maze<span style=color:#f92672>[</span><span style=color:#ae81ff>20</span> <span style=color:#f92672>-</span> bound <span style=color:#f92672>/</span> <span style=color:#ae81ff>2</span><span style=color:#f92672>][</span><span style=color:#ae81ff>20</span> <span style=color:#f92672>-</span> bound <span style=color:#f92672>/</span> <span style=color:#ae81ff>2</span> <span style=color:#f92672>+</span> nextInt<span style=color:#f92672>]</span> <span style=color:#f92672>=</span> <span style=color:#e6db74>&#39; &#39;</span><span style=color:#f92672>;</span>
+</span></span><span style=display:flex><span>                <span style=color:#66d9ef>break</span><span style=color:#f92672>;</span>
+</span></span><span style=display:flex><span>            <span style=color:#f92672>}</span>
+</span></span><span style=display:flex><span>            <span style=color:#66d9ef>case</span> <span style=color:#ae81ff>3</span><span style=color:#f92672>:</span> <span style=color:#f92672>{</span>
+</span></span><span style=display:flex><span>                maze<span style=color:#f92672>[</span><span style=color:#ae81ff>20</span> <span style=color:#f92672>-</span> bound <span style=color:#f92672>/</span> <span style=color:#ae81ff>2</span> <span style=color:#f92672>+</span> nextInt<span style=color:#f92672>][</span><span style=color:#ae81ff>20</span> <span style=color:#f92672>-</span> bound <span style=color:#f92672>/</span> <span style=color:#ae81ff>2</span><span style=color:#f92672>]</span> <span style=color:#f92672>=</span> <span style=color:#e6db74>&#39; &#39;</span><span style=color:#f92672>;</span>
+</span></span><span style=display:flex><span>                <span style=color:#66d9ef>break</span><span style=color:#f92672>;</span>
+</span></span><span style=display:flex><span>            <span style=color:#f92672>}</span>
+</span></span><span style=display:flex><span>        <span style=color:#f92672>}</span>
+</span></span><span style=display:flex><span>    <span style=color:#f92672>}</span>
+</span></span><span style=display:flex><span>    maze<span style=color:#f92672>[</span><span style=color:#ae81ff>20</span><span style=color:#f92672>][</span><span style=color:#ae81ff>20</span><span style=color:#f92672>]</span> <span style=color:#f92672>=</span> <span style=color:#e6db74>&#39;X&#39;</span><span style=color:#f92672>;</span>
+</span></span><span style=display:flex><span>    <span style=color:#66d9ef>for</span> <span style=color:#f92672>(</span><span style=color:#66d9ef>int</span> l <span style=color:#f92672>=</span> <span style=color:#ae81ff>0</span><span style=color:#f92672>;</span> l <span style=color:#f92672>&lt;</span> maze<span style=color:#f92672>.</span><span style=color:#a6e22e>length</span><span style=color:#f92672>;</span> <span style=color:#f92672>++</span>l<span style=color:#f92672>)</span> <span style=color:#f92672>{</span>
+</span></span><span style=display:flex><span>        <span style=color:#66d9ef>for</span> <span style=color:#f92672>(</span><span style=color:#66d9ef>int</span> n <span style=color:#f92672>=</span> <span style=color:#ae81ff>0</span><span style=color:#f92672>;</span> n <span style=color:#f92672>&lt;</span> maze<span style=color:#f92672>[</span>l<span style=color:#f92672>].</span><span style=color:#a6e22e>length</span><span style=color:#f92672>;</span> <span style=color:#f92672>++</span>n<span style=color:#f92672>)</span> <span style=color:#f92672>{</span>
+</span></span><span style=display:flex><span>            System<span style=color:#f92672>.</span><span style=color:#a6e22e>out</span><span style=color:#f92672>.</span><span style=color:#a6e22e>print</span><span style=color:#f92672>(</span>maze<span style=color:#f92672>[</span>l<span style=color:#f92672>][</span>n<span style=color:#f92672>]);</span>
+</span></span><span style=display:flex><span>        <span style=color:#f92672>}</span>
+</span></span><span style=display:flex><span>        System<span style=color:#f92672>.</span><span style=color:#a6e22e>out</span><span style=color:#f92672>.</span><span style=color:#a6e22e>println</span><span style=color:#f92672>();</span>
+</span></span><span style=display:flex><span>    <span style=color:#f92672>}</span>
+</span></span><span style=display:flex><span><span style=color:#f92672>}</span>
+</span></span></code></pre></div><p>Running the file locally, we can now see exactly what&rsquo;s going on:</p><pre tabindex=0><code class=language-terminal data-lang=terminal>$ java Maze.java
+I&#39;ve learned from my mistakes and this time I will construct a full maze you will never be able to break out of!!!
+                                         
+ ####################################### 
+ #                                     # 
+ # ################################### # 
+ # #                                 # # 
+ # # ############################### # # 
+ # # #                             # # # 
+ # # # ########################### # # # 
+ # # # #                         # # # # 
+ # # # # ####################### # # # # 
+ # # # # #                     # # # # # 
+ #   # # # ##### ############# # # # # # 
+ # # # # # #                 # # # # # # 
+ # # # # # #  ############## # # # # # # 
+ # # # # # # #             # # # # # # # 
+ # # # # # # # ## ######## # # # # # # # 
+ # # # # # # # #         # # # # # # # # 
+ # # # # # # # # ####### # # # # # # # # 
+ # # # # # # # # #     # # # # # # # # # 
+ # # # # # # # # # ### # # # # # # # # # 
+ # # # # # # # # # #X# # # # # # # # # # 
+ # # # # # # # # # # # # # # # # # # # # 
+ # # # # # # # # #     # # # # # # # # # 
+ # # # # # # # # # ##### # # # # # # # # 
+ # # # # # # # #         # # # # # # # # 
+ # # # # # # # ########### # # # # # # # 
+ # # # # # # #             # # # # # # # 
+ # # # # # # ############### # # # # # # 
+ # # # # # #                 # # # # # # 
+ # # # # # ################### # # # # # 
+ # # # # #                     # # # # # 
+ # # # # ####### ############### # # # # 
+ # # # #                         # # # # 
+ # # # ################## ######## # # # 
+ # # #                             # # # 
+ # # ############ ################## # # 
+ # #                                 # # 
+ # ################################### # 
+ #                                     # 
+ ########## ############################ 
+                                         
+</code></pre><p>This loop actually randomly generates holes into the walls! This means we can actually escape the maze once we&rsquo;re able to recover where the holes are.</p><p>Because the maze is only printed once at the beginning without the holes, we need to completely recover these holes through their random generation, and then move through each hole completely blind.</p><p>But there&rsquo;s just one problem: we can recover the random seed from the <code>nextDouble</code>, but how do we loop backwards to get the previously generated <code>nextInt</code>s?</p><h3 id=lcgs-go-both-ways>LCGs go both ways</h3><p>Remember how the RNG for <code>java.util.Random</code> is defined? It&rsquo;s a <a href=https://en.wikipedia.org/wiki/Linear_congruential_generator>linear congruential generator</a> in this form:</p><p>$$
+\begin{aligned}
+&amp;m = \text{0x5DEECE66D}& \\
+&amp;b = \text{0xB}& \\
+&amp;s = \text{initial_seed}&
+\end{aligned}
+$$
+$$
+\begin{aligned}
+&\text{For every call to next(bits)} \\
+&amp;s = ms + b \mod 2^{48} \\
+&\text{return } s >> (48 - \text{bits})
+\end{aligned}
+$$</p><p>Because LCGs are defined as just affine ($mx+b$) functions modulo some fixed number, <strong>they are actually reversible if you know their parameters</strong>. In this case, Java&rsquo;s <code>Random</code> parameters are all publicly known, so we can easily use this to convert a reversed form of our Java Random LCG.</p><p>Mathematically, this can be done as long as we can find $m^{-1}$ in the modulus (which happens to work for Java&rsquo;s value of $m$):</p><p>$$
+\begin{aligned}
+s_1 = m{s_0} + b \mod 2^{48} \\
+s_1 - b = m{s_0} \mod 2^{48} \\
+m&rsquo; = m^{-1} \mod 2^{48} \\
+\frac{s_1 - b}{m} = s_0 \mod 2^{48} \\
+m&rsquo;(s_1 - b) = s_0 \mod 2^{48}
+\end{aligned}
+$$</p><p>Here&rsquo;s an example in Python:</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-python data-lang=python><span style=display:flex><span>s <span style=color:#f92672>=</span> <span style=color:#ae81ff>123456789</span>
+</span></span><span style=display:flex><span>m <span style=color:#f92672>=</span> <span style=color:#ae81ff>0x5DEECE66D</span>
+</span></span><span style=display:flex><span>b <span style=color:#f92672>=</span> <span style=color:#ae81ff>0xB</span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>inv_m <span style=color:#f92672>=</span> pow(m, <span style=color:#f92672>-</span><span style=color:#ae81ff>1</span>, <span style=color:#ae81ff>1</span> <span style=color:#f92672>&lt;&lt;</span> <span style=color:#ae81ff>48</span>) <span style=color:#75715e># calculate m^-1 mod 2^48</span>
+</span></span><span style=display:flex><span>print(hex(inv_m)<span style=color:#f92672>.</span>upper()[<span style=color:#ae81ff>2</span>:])
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>next <span style=color:#f92672>=</span> (m <span style=color:#f92672>*</span> s <span style=color:#f92672>+</span> b) <span style=color:#f92672>%</span> (<span style=color:#ae81ff>1</span> <span style=color:#f92672>&lt;&lt;</span> <span style=color:#ae81ff>48</span>)
+</span></span><span style=display:flex><span>print(next)
+</span></span><span style=display:flex><span>print((next <span style=color:#f92672>-</span> b) <span style=color:#f92672>*</span> inv_m <span style=color:#f92672>%</span> (<span style=color:#ae81ff>1</span> <span style=color:#f92672>&lt;&lt;</span> <span style=color:#ae81ff>48</span>))
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#75715e># DFE05BCB1365</span>
+</span></span><span style=display:flex><span><span style=color:#75715e># 119305093197820</span>
+</span></span><span style=display:flex><span><span style=color:#75715e># 123456789 (back to original value of seed)</span>
+</span></span></code></pre></div><p>Let&rsquo;s fix up our previous solve script for <a href=#random-security---452---medium>random security</a>. At the same time, let&rsquo;s also ensure it returns the value that <code>next</code> would have returned if it were called from the previous seed state (You&rsquo;ll see why we want this later).</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-python data-lang=python><span style=display:flex><span>multiplier <span style=color:#f92672>=</span> <span style=color:#ae81ff>0x5DEECE66D</span>
+</span></span><span style=display:flex><span>addend <span style=color:#f92672>=</span> <span style=color:#ae81ff>0xB</span>
+</span></span><span style=display:flex><span>inv_mult <span style=color:#f92672>=</span> pow(multiplier, <span style=color:#f92672>-</span><span style=color:#ae81ff>1</span>, <span style=color:#ae81ff>1</span> <span style=color:#f92672>&lt;&lt;</span> <span style=color:#ae81ff>64</span>)
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>f <span style=color:#f92672>=</span> <span style=color:#f92672>&lt;</span>nextDouble_result<span style=color:#f92672>&gt;</span> <span style=color:#75715e># replace this</span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#66d9ef>def</span> <span style=color:#a6e22e>solve_random</span>(f):
+</span></span><span style=display:flex><span>    state <span style=color:#f92672>=</span> int(float(f) <span style=color:#f92672>*</span> (<span style=color:#ae81ff>1</span><span style=color:#f92672>&lt;&lt;</span><span style=color:#ae81ff>53</span>))
+</span></span><span style=display:flex><span>    next26 <span style=color:#f92672>=</span> state <span style=color:#f92672>&gt;&gt;</span> <span style=color:#ae81ff>27</span>
+</span></span><span style=display:flex><span>    next27 <span style=color:#f92672>=</span> state <span style=color:#f92672>&amp;</span> ((<span style=color:#ae81ff>1</span><span style=color:#f92672>&lt;&lt;</span><span style=color:#ae81ff>27</span>)<span style=color:#f92672>-</span><span style=color:#ae81ff>1</span>)
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>    mask <span style=color:#f92672>=</span> ((<span style=color:#ae81ff>1</span><span style=color:#f92672>&lt;&lt;</span><span style=color:#ae81ff>27</span>)<span style=color:#f92672>-</span><span style=color:#ae81ff>1</span>) <span style=color:#f92672>&lt;&lt;</span> (<span style=color:#ae81ff>48</span> <span style=color:#f92672>-</span> <span style=color:#ae81ff>27</span>)
+</span></span><span style=display:flex><span>    oldseedupper26 <span style=color:#f92672>=</span> next26 <span style=color:#f92672>&lt;&lt;</span> (<span style=color:#ae81ff>48</span> <span style=color:#f92672>-</span> <span style=color:#ae81ff>26</span>) <span style=color:#f92672>&amp;</span> mask
+</span></span><span style=display:flex><span>    newseedupper27 <span style=color:#f92672>=</span> next27 <span style=color:#f92672>&lt;&lt;</span> (<span style=color:#ae81ff>48</span> <span style=color:#f92672>-</span> <span style=color:#ae81ff>27</span>) <span style=color:#f92672>&amp;</span> mask
+</span></span><span style=display:flex><span>    possibleSeeds <span style=color:#f92672>=</span> []
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>    <span style=color:#66d9ef>for</span> oldseed <span style=color:#f92672>in</span> range(oldseedupper26, oldseedupper26 <span style=color:#f92672>+</span> ((<span style=color:#ae81ff>1</span> <span style=color:#f92672>&lt;&lt;</span> (<span style=color:#ae81ff>48</span> <span style=color:#f92672>-</span> <span style=color:#ae81ff>26</span>)))):
+</span></span><span style=display:flex><span>        newseed <span style=color:#f92672>=</span> oldseed <span style=color:#f92672>*</span> multiplier <span style=color:#f92672>+</span> addend
+</span></span><span style=display:flex><span>        newseed <span style=color:#f92672>=</span> newseed <span style=color:#f92672>&amp;</span> ((<span style=color:#ae81ff>1</span> <span style=color:#f92672>&lt;&lt;</span> <span style=color:#ae81ff>48</span>) <span style=color:#f92672>-</span> <span style=color:#ae81ff>1</span>)
+</span></span><span style=display:flex><span>        <span style=color:#66d9ef>if</span> newseed <span style=color:#f92672>&amp;</span> mask <span style=color:#f92672>==</span> newseedupper27:
+</span></span><span style=display:flex><span>            possibleSeeds<span style=color:#f92672>.</span>append(oldseed)
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>    <span style=color:#66d9ef>if</span> len(possibleSeeds) <span style=color:#f92672>!=</span> <span style=color:#ae81ff>1</span>:
+</span></span><span style=display:flex><span>        print(<span style=color:#e6db74>&#39;Error&#39;</span>)
+</span></span><span style=display:flex><span>        exit(<span style=color:#ae81ff>1</span>)
+</span></span><span style=display:flex><span>    <span style=color:#66d9ef>return</span> possibleSeeds[<span style=color:#ae81ff>0</span>]
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>seed <span style=color:#f92672>=</span> solve_random(f)
+</span></span><span style=display:flex><span>print(seed)
+</span></span></code></pre></div><p>First let&rsquo;s wrap the random seed cracking into its own function, as we know it already works. Then, from the seed recover, we can slowly start working backwards.</p><p>We need our <code>next</code> function again:</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-python data-lang=python><span style=display:flex><span><span style=color:#66d9ef>def</span> <span style=color:#a6e22e>next</span>(bits):
+</span></span><span style=display:flex><span>    <span style=color:#66d9ef>global</span> seed
+</span></span><span style=display:flex><span>    seed <span style=color:#f92672>=</span> (seed <span style=color:#f92672>*</span> multiplier <span style=color:#f92672>+</span> addend) <span style=color:#f92672>&amp;</span> ((<span style=color:#ae81ff>1</span> <span style=color:#f92672>&lt;&lt;</span> <span style=color:#ae81ff>48</span>) <span style=color:#f92672>-</span> <span style=color:#ae81ff>1</span>)
+</span></span><span style=display:flex><span>    <span style=color:#66d9ef>return</span> seed <span style=color:#f92672>&gt;&gt;</span> (<span style=color:#ae81ff>48</span> <span style=color:#f92672>-</span> bits)
+</span></span></code></pre></div><p>Let&rsquo;s see how we could create a <code>prev</code> function now. We know that we have to step back using the inverse of the LCG, but we also want it to return what <code>next</code> would have returned from that random state. An easy way to do this is just to reverse once, call next, and then reverse again. No extra work required!</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-python data-lang=python><span style=display:flex><span><span style=color:#66d9ef>def</span> <span style=color:#a6e22e>prev</span>(bits): 
+</span></span><span style=display:flex><span>    <span style=color:#66d9ef>global</span> seed 
+</span></span><span style=display:flex><span>    seed <span style=color:#f92672>=</span> (seed <span style=color:#f92672>-</span> addend) <span style=color:#f92672>*</span> inv_mult <span style=color:#f92672>&amp;</span> ((<span style=color:#ae81ff>1</span> <span style=color:#f92672>&lt;&lt;</span> <span style=color:#ae81ff>48</span>) <span style=color:#f92672>-</span> <span style=color:#ae81ff>1</span>)
+</span></span><span style=display:flex><span>    ret <span style=color:#f92672>=</span> next(bits)
+</span></span><span style=display:flex><span>    seed <span style=color:#f92672>=</span> (seed <span style=color:#f92672>-</span> addend) <span style=color:#f92672>*</span> inv_mult <span style=color:#f92672>&amp;</span> ((<span style=color:#ae81ff>1</span> <span style=color:#f92672>&lt;&lt;</span> <span style=color:#ae81ff>48</span>) <span style=color:#f92672>-</span> <span style=color:#ae81ff>1</span>)
+</span></span><span style=display:flex><span>    <span style=color:#66d9ef>return</span> ret
+</span></span></code></pre></div><p>Now we can remake <code>nextDouble</code> and <code>prevDouble</code> to check that we&rsquo;re reversing correctly:</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-python data-lang=python><span style=display:flex><span><span style=color:#66d9ef>def</span> <span style=color:#a6e22e>nextDouble</span>():
+</span></span><span style=display:flex><span>    <span style=color:#66d9ef>return</span> ((next(<span style=color:#ae81ff>26</span>) <span style=color:#f92672>&lt;&lt;</span> <span style=color:#ae81ff>27</span>) <span style=color:#f92672>+</span> next(<span style=color:#ae81ff>27</span>)) <span style=color:#f92672>/</span> (<span style=color:#ae81ff>1</span> <span style=color:#f92672>&lt;&lt;</span> <span style=color:#ae81ff>53</span>)
+</span></span><span style=display:flex><span><span style=color:#66d9ef>def</span> <span style=color:#a6e22e>prevDouble</span>():
+</span></span><span style=display:flex><span>    <span style=color:#66d9ef>return</span> (prev(<span style=color:#ae81ff>27</span>) <span style=color:#f92672>+</span> (prev(<span style=color:#ae81ff>26</span>) <span style=color:#f92672>&lt;&lt;</span> <span style=color:#ae81ff>27</span>)) <span style=color:#f92672>/</span> (<span style=color:#ae81ff>1</span> <span style=color:#f92672>&lt;&lt;</span> <span style=color:#ae81ff>53</span>)
+</span></span></code></pre></div><p>Just to test:</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-python data-lang=python><span style=display:flex><span><span style=color:#75715e># Server randomly generated numbers:</span>
+</span></span><span style=display:flex><span><span style=color:#75715e># 0.1738482973385579</span>
+</span></span><span style=display:flex><span><span style=color:#75715e># 0.31981032549992894</span>
+</span></span><span style=display:flex><span><span style=color:#75715e># 0.6341852552290427</span>
+</span></span><span style=display:flex><span>next(<span style=color:#ae81ff>1</span>) <span style=color:#75715e># remember we&#39;re still in the middle of a nextDouble call</span>
+</span></span><span style=display:flex><span>nxt_dbl <span style=color:#f92672>=</span> nextDouble()
+</span></span><span style=display:flex><span>nxt_nxt_dbl <span style=color:#f92672>=</span> nextDouble()
+</span></span><span style=display:flex><span>nxt_nxt_test <span style=color:#f92672>=</span> prevDouble()
+</span></span><span style=display:flex><span>nxt_test <span style=color:#f92672>=</span> prevDouble()
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>print(nxt_dbl, nxt_test)
+</span></span><span style=display:flex><span>print(nxt_nxt_dbl, nxt_nxt_test)
+</span></span><span style=display:flex><span><span style=color:#75715e># 0.1738482973385579 0.1738482973385579</span>
+</span></span><span style=display:flex><span><span style=color:#75715e># 0.31981032549992894 0.31981032549992894</span>
+</span></span></code></pre></div><p>But remember, the random holes were made with <code>nextInt</code>, so we need to reverse that as well! Here&rsquo;s the normal <code>nextInt</code> ported to Python:</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-python data-lang=python><span style=display:flex><span><span style=color:#66d9ef>def</span> <span style=color:#a6e22e>nextInt</span>(bound):
+</span></span><span style=display:flex><span>    <span style=color:#66d9ef>if</span> bound <span style=color:#f92672>&lt;</span> <span style=color:#ae81ff>0</span>:  <span style=color:#66d9ef>raise</span> <span style=color:#a6e22e>ValueError</span>(<span style=color:#e6db74>&#34;bound must be positive&#34;</span>)
+</span></span><span style=display:flex><span>    <span style=color:#66d9ef>if</span> bound <span style=color:#f92672>&amp;</span> <span style=color:#f92672>-</span>bound <span style=color:#f92672>==</span> bound:
+</span></span><span style=display:flex><span>        <span style=color:#66d9ef>return</span> (bound <span style=color:#f92672>*</span> next(<span style=color:#ae81ff>31</span>)) <span style=color:#f92672>&gt;&gt;</span> <span style=color:#ae81ff>31</span>
+</span></span><span style=display:flex><span>    
+</span></span><span style=display:flex><span>    bits <span style=color:#f92672>=</span> next(<span style=color:#ae81ff>31</span>)
+</span></span><span style=display:flex><span>    val <span style=color:#f92672>=</span> bits <span style=color:#f92672>%</span> bound
+</span></span><span style=display:flex><span>    <span style=color:#66d9ef>while</span> bits <span style=color:#f92672>-</span> val <span style=color:#f92672>+</span> (bound <span style=color:#f92672>-</span> <span style=color:#ae81ff>1</span>) <span style=color:#f92672>&lt;</span> <span style=color:#ae81ff>0</span>:
+</span></span><span style=display:flex><span>        bits <span style=color:#f92672>=</span> next(<span style=color:#ae81ff>31</span>)
+</span></span><span style=display:flex><span>        val <span style=color:#f92672>=</span> bits <span style=color:#f92672>%</span> bound
+</span></span><span style=display:flex><span>    <span style=color:#66d9ef>return</span> val
+</span></span></code></pre></div><p>While the loop may look hard to reverse, a dive into <a href=https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/Random.html#nextInt(int)>Java docs</a> actually reveals that this loop rarely ever rejects in the first place, so let&rsquo;s just replace all the <code>next</code> calls with <code>prev</code> and call it a day.</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-python data-lang=python><span style=display:flex><span><span style=color:#66d9ef>def</span> <span style=color:#a6e22e>prevInt</span>(bound):
+</span></span><span style=display:flex><span>    <span style=color:#66d9ef>if</span> bound <span style=color:#f92672>&lt;</span> <span style=color:#ae81ff>0</span>:  <span style=color:#66d9ef>raise</span> <span style=color:#a6e22e>ValueError</span>(<span style=color:#e6db74>&#34;bound must be positive&#34;</span>)
+</span></span><span style=display:flex><span>    <span style=color:#66d9ef>if</span> bound <span style=color:#f92672>&amp;</span> <span style=color:#f92672>-</span>bound <span style=color:#f92672>==</span> bound:
+</span></span><span style=display:flex><span>        <span style=color:#66d9ef>return</span> (bound <span style=color:#f92672>*</span> prev(<span style=color:#ae81ff>31</span>)) <span style=color:#f92672>&gt;&gt;</span> <span style=color:#ae81ff>31</span>
+</span></span><span style=display:flex><span>    
+</span></span><span style=display:flex><span>    bits <span style=color:#f92672>=</span> prev(<span style=color:#ae81ff>31</span>)
+</span></span><span style=display:flex><span>    val <span style=color:#f92672>=</span> bits <span style=color:#f92672>%</span> bound
+</span></span><span style=display:flex><span>    <span style=color:#66d9ef>while</span> bits <span style=color:#f92672>-</span> val <span style=color:#f92672>+</span> (bound <span style=color:#f92672>-</span> <span style=color:#ae81ff>1</span>) <span style=color:#f92672>&lt;</span> <span style=color:#ae81ff>0</span>:
+</span></span><span style=display:flex><span>        bits <span style=color:#f92672>=</span> prev(<span style=color:#ae81ff>31</span>)
+</span></span><span style=display:flex><span>        val <span style=color:#f92672>=</span> bits <span style=color:#f92672>%</span> bound
+</span></span><span style=display:flex><span>    <span style=color:#66d9ef>return</span> val
+</span></span></code></pre></div><p>Finally, we can start reversing the holes. Remember that since the holes are generated by a for loop, we need to iterate backwards to get the correct values. On
+each loop iteration, we also need to generate the <code>nextInt(4)</code> first, and then the <code>nextInt(bound)</code>.</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-python data-lang=python><span style=display:flex><span>seed <span style=color:#f92672>=</span> solve_random(f)
+</span></span><span style=display:flex><span>prev(<span style=color:#ae81ff>1</span>)
+</span></span><span style=display:flex><span>grid <span style=color:#f92672>=</span> <span style=color:#e6db74>&#39;&#39;&#39;
+</span></span></span><span style=display:flex><span><span style=color:#e6db74> ####################################### 
+</span></span></span><span style=display:flex><span><span style=color:#e6db74> #                                     # 
+</span></span></span><span style=display:flex><span><span style=color:#e6db74> # ################################### #
+</span></span></span><span style=display:flex><span><span style=color:#e6db74> # #                                 # # 
+</span></span></span><span style=display:flex><span><span style=color:#e6db74> # # ############################### # #
+</span></span></span><span style=display:flex><span><span style=color:#e6db74> # # #                             # # #
+</span></span></span><span style=display:flex><span><span style=color:#e6db74> # # # ########################### # # #
+</span></span></span><span style=display:flex><span><span style=color:#e6db74> # # # #                         # # # #
+</span></span></span><span style=display:flex><span><span style=color:#e6db74> # # # # ####################### # # # # 
+</span></span></span><span style=display:flex><span><span style=color:#e6db74> # # # # #                     # # # # #
+</span></span></span><span style=display:flex><span><span style=color:#e6db74> # # # # # ################### # # # # #
+</span></span></span><span style=display:flex><span><span style=color:#e6db74> # # # # # #                 # # # # # #
+</span></span></span><span style=display:flex><span><span style=color:#e6db74> # # # # # # ############### # # # # # #
+</span></span></span><span style=display:flex><span><span style=color:#e6db74> # # # # # # #             # # # # # # # 
+</span></span></span><span style=display:flex><span><span style=color:#e6db74> # # # # # # # ########### # # # # # # #
+</span></span></span><span style=display:flex><span><span style=color:#e6db74> # # # # # # # #         # # # # # # # #
+</span></span></span><span style=display:flex><span><span style=color:#e6db74> # # # # # # # # ####### # # # # # # # #
+</span></span></span><span style=display:flex><span><span style=color:#e6db74> # # # # # # # # #     # # # # # # # # #
+</span></span></span><span style=display:flex><span><span style=color:#e6db74> # # # # # # # # # ### # # # # # # # # #
+</span></span></span><span style=display:flex><span><span style=color:#e6db74> # # # # # # # # # # # # # # # # # # # # 
+</span></span></span><span style=display:flex><span><span style=color:#e6db74> # # # # # # # # # ### # # # # # # # # #
+</span></span></span><span style=display:flex><span><span style=color:#e6db74> # # # # # # # # #     # # # # # # # # #
+</span></span></span><span style=display:flex><span><span style=color:#e6db74> # # # # # # # # ####### # # # # # # # #
+</span></span></span><span style=display:flex><span><span style=color:#e6db74> # # # # # # # #         # # # # # # # #
+</span></span></span><span style=display:flex><span><span style=color:#e6db74> # # # # # # # ########### # # # # # # #
+</span></span></span><span style=display:flex><span><span style=color:#e6db74> # # # # # # #             # # # # # # #
+</span></span></span><span style=display:flex><span><span style=color:#e6db74> # # # # # # ############### # # # # # #
+</span></span></span><span style=display:flex><span><span style=color:#e6db74> # # # # # #                 # # # # # #
+</span></span></span><span style=display:flex><span><span style=color:#e6db74> # # # # # ################### # # # # #
+</span></span></span><span style=display:flex><span><span style=color:#e6db74> # # # # #                     # # # # #
+</span></span></span><span style=display:flex><span><span style=color:#e6db74> # # # # ####################### # # # #
+</span></span></span><span style=display:flex><span><span style=color:#e6db74> # # # #                         # # # #
+</span></span></span><span style=display:flex><span><span style=color:#e6db74> # # # ########################### # # #
+</span></span></span><span style=display:flex><span><span style=color:#e6db74> # # #                             # # #
+</span></span></span><span style=display:flex><span><span style=color:#e6db74> # # ############################### # #
+</span></span></span><span style=display:flex><span><span style=color:#e6db74> # #                                 # #
+</span></span></span><span style=display:flex><span><span style=color:#e6db74> # ################################### #
+</span></span></span><span style=display:flex><span><span style=color:#e6db74> #                                     #
+</span></span></span><span style=display:flex><span><span style=color:#e6db74> #######################################
+</span></span></span><span style=display:flex><span><span style=color:#e6db74> &#39;&#39;&#39;</span><span style=color:#f92672>.</span>splitlines()
+</span></span><span style=display:flex><span>grid <span style=color:#f92672>=</span> [list(line<span style=color:#f92672>.</span>ljust(<span style=color:#ae81ff>41</span>, <span style=color:#e6db74>&#39; &#39;</span>)) <span style=color:#66d9ef>for</span> line <span style=color:#f92672>in</span> grid]
+</span></span><span style=display:flex><span>print(len(grid), len(grid[<span style=color:#ae81ff>0</span>]))
+</span></span><span style=display:flex><span><span style=color:#66d9ef>for</span> i <span style=color:#f92672>in</span> range(<span style=color:#ae81ff>9</span>, <span style=color:#f92672>-</span><span style=color:#ae81ff>1</span>, <span style=color:#f92672>-</span><span style=color:#ae81ff>1</span>):
+</span></span><span style=display:flex><span>    bound <span style=color:#f92672>=</span> <span style=color:#ae81ff>4</span><span style=color:#f92672>*</span>i <span style=color:#f92672>+</span> <span style=color:#ae81ff>3</span>
+</span></span><span style=display:flex><span>    c <span style=color:#f92672>=</span> prevInt(<span style=color:#ae81ff>4</span>)
+</span></span><span style=display:flex><span>    nextint <span style=color:#f92672>=</span> prevInt(bound)
+</span></span><span style=display:flex><span>    print(c, nextint)
+</span></span><span style=display:flex><span>    <span style=color:#66d9ef>if</span> c <span style=color:#f92672>==</span> <span style=color:#ae81ff>0</span>:
+</span></span><span style=display:flex><span>        <span style=color:#75715e># maze[(i8 / 2) + 20][(20 - (i8 / 2)) + nextInt] = &#39; &#39;;</span>
+</span></span><span style=display:flex><span>        grid[(bound <span style=color:#f92672>//</span> <span style=color:#ae81ff>2</span>) <span style=color:#f92672>+</span> <span style=color:#ae81ff>20</span>][(<span style=color:#ae81ff>20</span> <span style=color:#f92672>-</span> (bound <span style=color:#f92672>//</span> <span style=color:#ae81ff>2</span>)) <span style=color:#f92672>+</span> nextint] <span style=color:#f92672>=</span> <span style=color:#e6db74>&#39; &#39;</span>
+</span></span><span style=display:flex><span>    <span style=color:#66d9ef>elif</span> c <span style=color:#f92672>==</span> <span style=color:#ae81ff>1</span>:
+</span></span><span style=display:flex><span>        <span style=color:#75715e># maze[nextInt + (20 - (i8 / 2))][(i8 / 2) + 20] = &#39; &#39;;</span>
+</span></span><span style=display:flex><span>        grid[nextint <span style=color:#f92672>+</span> (<span style=color:#ae81ff>20</span> <span style=color:#f92672>-</span> (bound <span style=color:#f92672>//</span> <span style=color:#ae81ff>2</span>))][(bound <span style=color:#f92672>//</span> <span style=color:#ae81ff>2</span>) <span style=color:#f92672>+</span> <span style=color:#ae81ff>20</span>] <span style=color:#f92672>=</span> <span style=color:#e6db74>&#39; &#39;</span>
+</span></span><span style=display:flex><span>    <span style=color:#66d9ef>elif</span> c <span style=color:#f92672>==</span> <span style=color:#ae81ff>2</span>:
+</span></span><span style=display:flex><span>        <span style=color:#75715e># maze[20 - (i8 / 2)][(20 - (i8 / 2)) + nextInt] = &#39; &#39;;</span>
+</span></span><span style=display:flex><span>        grid[<span style=color:#ae81ff>20</span> <span style=color:#f92672>-</span> (bound <span style=color:#f92672>//</span> <span style=color:#ae81ff>2</span>)][(<span style=color:#ae81ff>20</span> <span style=color:#f92672>-</span> (bound <span style=color:#f92672>//</span> <span style=color:#ae81ff>2</span>)) <span style=color:#f92672>+</span> nextint] <span style=color:#f92672>=</span> <span style=color:#e6db74>&#39; &#39;</span>
+</span></span><span style=display:flex><span>    <span style=color:#66d9ef>elif</span> c <span style=color:#f92672>==</span> <span style=color:#ae81ff>3</span>:
+</span></span><span style=display:flex><span>        <span style=color:#75715e># maze[nextInt + (20 - (i8 / 2))][20 - (i8 / 2)] = &#39; &#39;;</span>
+</span></span><span style=display:flex><span>        grid[nextint <span style=color:#f92672>+</span> (<span style=color:#ae81ff>20</span> <span style=color:#f92672>-</span> (bound <span style=color:#f92672>//</span> <span style=color:#ae81ff>2</span>))][<span style=color:#ae81ff>20</span> <span style=color:#f92672>-</span> (bound <span style=color:#f92672>//</span> <span style=color:#ae81ff>2</span>)] <span style=color:#f92672>=</span> <span style=color:#e6db74>&#39; &#39;</span>
+</span></span></code></pre></div><p>Finally, we need some way to generate the correct path to get out. Since the holes are completely hidden on remote, I just chose to do it locally with BFS and then copy the path
+over to remote.</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-python data-lang=python><span style=display:flex><span>x, y <span style=color:#f92672>=</span> <span style=color:#ae81ff>20</span>, <span style=color:#ae81ff>20</span>
+</span></span><span style=display:flex><span>visited <span style=color:#f92672>=</span> set()
+</span></span><span style=display:flex><span>queue <span style=color:#f92672>=</span> [(x, y, <span style=color:#e6db74>&#39;&#39;</span>)]
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>dxyc <span style=color:#f92672>=</span> [
+</span></span><span style=display:flex><span>    (<span style=color:#f92672>-</span><span style=color:#ae81ff>1</span>, <span style=color:#f92672>-</span><span style=color:#ae81ff>1</span>, <span style=color:#e6db74>&#39;Q&#39;</span>),
+</span></span><span style=display:flex><span>    (<span style=color:#ae81ff>0</span>, <span style=color:#f92672>-</span><span style=color:#ae81ff>1</span>, <span style=color:#e6db74>&#39;W&#39;</span>),
+</span></span><span style=display:flex><span>    (<span style=color:#ae81ff>1</span>, <span style=color:#f92672>-</span><span style=color:#ae81ff>1</span>, <span style=color:#e6db74>&#39;E&#39;</span>),
+</span></span><span style=display:flex><span>    (<span style=color:#f92672>-</span><span style=color:#ae81ff>1</span>, <span style=color:#ae81ff>0</span>, <span style=color:#e6db74>&#39;A&#39;</span>),
+</span></span><span style=display:flex><span>    (<span style=color:#ae81ff>1</span>, <span style=color:#ae81ff>0</span>, <span style=color:#e6db74>&#39;D&#39;</span>),
+</span></span><span style=display:flex><span>    (<span style=color:#f92672>-</span><span style=color:#ae81ff>1</span>, <span style=color:#ae81ff>1</span>, <span style=color:#e6db74>&#39;Z&#39;</span>),
+</span></span><span style=display:flex><span>    (<span style=color:#ae81ff>0</span>, <span style=color:#ae81ff>1</span>, <span style=color:#e6db74>&#39;S&#39;</span>),
+</span></span><span style=display:flex><span>    (<span style=color:#ae81ff>1</span>, <span style=color:#ae81ff>1</span>, <span style=color:#e6db74>&#39;C&#39;</span>),
+</span></span><span style=display:flex><span>]
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#66d9ef>while</span> queue:
+</span></span><span style=display:flex><span>    x, y, path <span style=color:#f92672>=</span> queue<span style=color:#f92672>.</span>pop(<span style=color:#ae81ff>0</span>)
+</span></span><span style=display:flex><span>    <span style=color:#66d9ef>if</span> (x, y) <span style=color:#f92672>in</span> visited:
+</span></span><span style=display:flex><span>        <span style=color:#66d9ef>continue</span>
+</span></span><span style=display:flex><span>    visited<span style=color:#f92672>.</span>add((x, y))
+</span></span><span style=display:flex><span>    <span style=color:#66d9ef>if</span> x <span style=color:#f92672>&lt;</span> <span style=color:#ae81ff>0</span> <span style=color:#f92672>or</span> x <span style=color:#f92672>&gt;</span> <span style=color:#ae81ff>40</span> <span style=color:#f92672>or</span> y <span style=color:#f92672>&lt;</span> <span style=color:#ae81ff>0</span> <span style=color:#f92672>or</span> y <span style=color:#f92672>&gt;</span> <span style=color:#ae81ff>40</span>:
+</span></span><span style=display:flex><span>        print(<span style=color:#e6db74>&#34; &#34;</span><span style=color:#f92672>.</span>join(list(path)))
+</span></span><span style=display:flex><span>        <span style=color:#66d9ef>break</span>
+</span></span><span style=display:flex><span>    <span style=color:#66d9ef>if</span> grid[y][x] <span style=color:#f92672>==</span> <span style=color:#e6db74>&#39; &#39;</span>:
+</span></span><span style=display:flex><span>        <span style=color:#66d9ef>for</span> dx, dy, c <span style=color:#f92672>in</span> dxyc:
+</span></span><span style=display:flex><span>            queue<span style=color:#f92672>.</span>append((x <span style=color:#f92672>+</span> dx, y <span style=color:#f92672>+</span> dy, path <span style=color:#f92672>+</span> c))
+</span></span></code></pre></div><p>Now all we have to do it get a random number, pass it into our script, and submit the path to win!
+Full script below:</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-python data-lang=python><span style=display:flex><span><span style=color:#f92672>****</span>multiplier <span style=color:#f92672>=</span> <span style=color:#ae81ff>0x5DEECE66D</span>
+</span></span><span style=display:flex><span>addend <span style=color:#f92672>=</span> <span style=color:#ae81ff>0xB</span>
+</span></span><span style=display:flex><span>inv_mult <span style=color:#f92672>=</span> pow(multiplier, <span style=color:#f92672>-</span><span style=color:#ae81ff>1</span>, <span style=color:#ae81ff>1</span> <span style=color:#f92672>&lt;&lt;</span> <span style=color:#ae81ff>64</span>)
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>f <span style=color:#f92672>=</span> <span style=color:#ae81ff>0.7168512222588633</span> <span style=color:#75715e># replace this</span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#66d9ef>def</span> <span style=color:#a6e22e>solve_random</span>(f):
+</span></span><span style=display:flex><span>    state <span style=color:#f92672>=</span> int(float(f) <span style=color:#f92672>*</span> (<span style=color:#ae81ff>1</span><span style=color:#f92672>&lt;&lt;</span><span style=color:#ae81ff>53</span>))
+</span></span><span style=display:flex><span>    next26 <span style=color:#f92672>=</span> state <span style=color:#f92672>&gt;&gt;</span> <span style=color:#ae81ff>27</span>
+</span></span><span style=display:flex><span>    next27 <span style=color:#f92672>=</span> state <span style=color:#f92672>&amp;</span> ((<span style=color:#ae81ff>1</span><span style=color:#f92672>&lt;&lt;</span><span style=color:#ae81ff>27</span>)<span style=color:#f92672>-</span><span style=color:#ae81ff>1</span>)
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>    mask <span style=color:#f92672>=</span> ((<span style=color:#ae81ff>1</span><span style=color:#f92672>&lt;&lt;</span><span style=color:#ae81ff>27</span>)<span style=color:#f92672>-</span><span style=color:#ae81ff>1</span>) <span style=color:#f92672>&lt;&lt;</span> (<span style=color:#ae81ff>48</span> <span style=color:#f92672>-</span> <span style=color:#ae81ff>27</span>)
+</span></span><span style=display:flex><span>    oldseedupper26 <span style=color:#f92672>=</span> next26 <span style=color:#f92672>&lt;&lt;</span> (<span style=color:#ae81ff>48</span> <span style=color:#f92672>-</span> <span style=color:#ae81ff>26</span>) <span style=color:#f92672>&amp;</span> mask
+</span></span><span style=display:flex><span>    newseedupper27 <span style=color:#f92672>=</span> next27 <span style=color:#f92672>&lt;&lt;</span> (<span style=color:#ae81ff>48</span> <span style=color:#f92672>-</span> <span style=color:#ae81ff>27</span>) <span style=color:#f92672>&amp;</span> mask
+</span></span><span style=display:flex><span>    possibleSeeds <span style=color:#f92672>=</span> []
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>    <span style=color:#66d9ef>for</span> oldseed <span style=color:#f92672>in</span> range(oldseedupper26, oldseedupper26 <span style=color:#f92672>+</span> ((<span style=color:#ae81ff>1</span> <span style=color:#f92672>&lt;&lt;</span> (<span style=color:#ae81ff>48</span> <span style=color:#f92672>-</span> <span style=color:#ae81ff>26</span>)))):
+</span></span><span style=display:flex><span>        newseed <span style=color:#f92672>=</span> oldseed <span style=color:#f92672>*</span> multiplier <span style=color:#f92672>+</span> addend
+</span></span><span style=display:flex><span>        newseed <span style=color:#f92672>=</span> newseed <span style=color:#f92672>&amp;</span> ((<span style=color:#ae81ff>1</span> <span style=color:#f92672>&lt;&lt;</span> <span style=color:#ae81ff>48</span>) <span style=color:#f92672>-</span> <span style=color:#ae81ff>1</span>)
+</span></span><span style=display:flex><span>        <span style=color:#66d9ef>if</span> newseed <span style=color:#f92672>&amp;</span> mask <span style=color:#f92672>==</span> newseedupper27:
+</span></span><span style=display:flex><span>            possibleSeeds<span style=color:#f92672>.</span>append(oldseed)
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>    <span style=color:#66d9ef>if</span> len(possibleSeeds) <span style=color:#f92672>!=</span> <span style=color:#ae81ff>1</span>:
+</span></span><span style=display:flex><span>        print(<span style=color:#e6db74>&#39;Error&#39;</span>)
+</span></span><span style=display:flex><span>        exit(<span style=color:#ae81ff>1</span>)
+</span></span><span style=display:flex><span>    <span style=color:#66d9ef>return</span> possibleSeeds[<span style=color:#ae81ff>0</span>]
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>seed <span style=color:#f92672>=</span> solve_random(f)
+</span></span><span style=display:flex><span>print(seed)
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#66d9ef>def</span> <span style=color:#a6e22e>next</span>(bits):
+</span></span><span style=display:flex><span>    <span style=color:#66d9ef>global</span> seed
+</span></span><span style=display:flex><span>    seed <span style=color:#f92672>=</span> (seed <span style=color:#f92672>*</span> multiplier <span style=color:#f92672>+</span> addend) <span style=color:#f92672>&amp;</span> ((<span style=color:#ae81ff>1</span> <span style=color:#f92672>&lt;&lt;</span> <span style=color:#ae81ff>48</span>) <span style=color:#f92672>-</span> <span style=color:#ae81ff>1</span>)
+</span></span><span style=display:flex><span>    <span style=color:#66d9ef>return</span> seed <span style=color:#f92672>&gt;&gt;</span> (<span style=color:#ae81ff>48</span> <span style=color:#f92672>-</span> bits)
+</span></span><span style=display:flex><span><span style=color:#66d9ef>def</span> <span style=color:#a6e22e>prev</span>(bits): 
+</span></span><span style=display:flex><span>    <span style=color:#66d9ef>global</span> seed 
+</span></span><span style=display:flex><span>    seed <span style=color:#f92672>=</span> (seed <span style=color:#f92672>-</span> addend) <span style=color:#f92672>*</span> inv_mult <span style=color:#f92672>&amp;</span> ((<span style=color:#ae81ff>1</span> <span style=color:#f92672>&lt;&lt;</span> <span style=color:#ae81ff>48</span>) <span style=color:#f92672>-</span> <span style=color:#ae81ff>1</span>)
+</span></span><span style=display:flex><span>    ret <span style=color:#f92672>=</span> next(bits)
+</span></span><span style=display:flex><span>    seed <span style=color:#f92672>=</span> (seed <span style=color:#f92672>-</span> addend) <span style=color:#f92672>*</span> inv_mult <span style=color:#f92672>&amp;</span> ((<span style=color:#ae81ff>1</span> <span style=color:#f92672>&lt;&lt;</span> <span style=color:#ae81ff>48</span>) <span style=color:#f92672>-</span> <span style=color:#ae81ff>1</span>)
+</span></span><span style=display:flex><span>    <span style=color:#66d9ef>return</span> ret
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#66d9ef>def</span> <span style=color:#a6e22e>nextInt</span>(bound):
+</span></span><span style=display:flex><span>    <span style=color:#66d9ef>if</span> bound <span style=color:#f92672>&lt;</span> <span style=color:#ae81ff>0</span>:  <span style=color:#66d9ef>raise</span> <span style=color:#a6e22e>ValueError</span>(<span style=color:#e6db74>&#34;bound must be positive&#34;</span>)
+</span></span><span style=display:flex><span>    <span style=color:#66d9ef>if</span> bound <span style=color:#f92672>&amp;</span> <span style=color:#f92672>-</span>bound <span style=color:#f92672>==</span> bound:
+</span></span><span style=display:flex><span>        <span style=color:#66d9ef>return</span> (bound <span style=color:#f92672>*</span> next(<span style=color:#ae81ff>31</span>)) <span style=color:#f92672>&gt;&gt;</span> <span style=color:#ae81ff>31</span>
+</span></span><span style=display:flex><span>    
+</span></span><span style=display:flex><span>    bits <span style=color:#f92672>=</span> next(<span style=color:#ae81ff>31</span>)
+</span></span><span style=display:flex><span>    val <span style=color:#f92672>=</span> bits <span style=color:#f92672>%</span> bound
+</span></span><span style=display:flex><span>    <span style=color:#66d9ef>while</span> bits <span style=color:#f92672>-</span> val <span style=color:#f92672>+</span> (bound <span style=color:#f92672>-</span> <span style=color:#ae81ff>1</span>) <span style=color:#f92672>&lt;</span> <span style=color:#ae81ff>0</span>:
+</span></span><span style=display:flex><span>        bits <span style=color:#f92672>=</span> next(<span style=color:#ae81ff>31</span>)
+</span></span><span style=display:flex><span>        val <span style=color:#f92672>=</span> bits <span style=color:#f92672>%</span> bound
+</span></span><span style=display:flex><span>    <span style=color:#66d9ef>return</span> val
+</span></span><span style=display:flex><span><span style=color:#66d9ef>def</span> <span style=color:#a6e22e>prevInt</span>(bound):
+</span></span><span style=display:flex><span>    <span style=color:#66d9ef>if</span> bound <span style=color:#f92672>&lt;</span> <span style=color:#ae81ff>0</span>:  <span style=color:#66d9ef>raise</span> <span style=color:#a6e22e>ValueError</span>(<span style=color:#e6db74>&#34;bound must be positive&#34;</span>)
+</span></span><span style=display:flex><span>    <span style=color:#66d9ef>if</span> bound <span style=color:#f92672>&amp;</span> <span style=color:#f92672>-</span>bound <span style=color:#f92672>==</span> bound:
+</span></span><span style=display:flex><span>        <span style=color:#66d9ef>return</span> (bound <span style=color:#f92672>*</span> prev(<span style=color:#ae81ff>31</span>)) <span style=color:#f92672>&gt;&gt;</span> <span style=color:#ae81ff>31</span>
+</span></span><span style=display:flex><span>    
+</span></span><span style=display:flex><span>    bits <span style=color:#f92672>=</span> prev(<span style=color:#ae81ff>31</span>)
+</span></span><span style=display:flex><span>    val <span style=color:#f92672>=</span> bits <span style=color:#f92672>%</span> bound
+</span></span><span style=display:flex><span>    <span style=color:#66d9ef>while</span> bits <span style=color:#f92672>-</span> val <span style=color:#f92672>+</span> (bound <span style=color:#f92672>-</span> <span style=color:#ae81ff>1</span>) <span style=color:#f92672>&lt;</span> <span style=color:#ae81ff>0</span>:
+</span></span><span style=display:flex><span>        bits <span style=color:#f92672>=</span> prev(<span style=color:#ae81ff>31</span>)
+</span></span><span style=display:flex><span>        val <span style=color:#f92672>=</span> bits <span style=color:#f92672>%</span> bound
+</span></span><span style=display:flex><span>    <span style=color:#66d9ef>return</span> val
+</span></span><span style=display:flex><span><span style=color:#66d9ef>def</span> <span style=color:#a6e22e>nextDouble</span>():
+</span></span><span style=display:flex><span>    <span style=color:#66d9ef>return</span> ((next(<span style=color:#ae81ff>26</span>) <span style=color:#f92672>&lt;&lt;</span> <span style=color:#ae81ff>27</span>) <span style=color:#f92672>+</span> next(<span style=color:#ae81ff>27</span>)) <span style=color:#f92672>/</span> (<span style=color:#ae81ff>1</span> <span style=color:#f92672>&lt;&lt;</span> <span style=color:#ae81ff>53</span>)
+</span></span><span style=display:flex><span><span style=color:#66d9ef>def</span> <span style=color:#a6e22e>prevDouble</span>():
+</span></span><span style=display:flex><span>    <span style=color:#66d9ef>return</span> (prev(<span style=color:#ae81ff>27</span>) <span style=color:#f92672>+</span> (prev(<span style=color:#ae81ff>26</span>) <span style=color:#f92672>&lt;&lt;</span> <span style=color:#ae81ff>27</span>)) <span style=color:#f92672>/</span> (<span style=color:#ae81ff>1</span> <span style=color:#f92672>&lt;&lt;</span> <span style=color:#ae81ff>53</span>)
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>prev(<span style=color:#ae81ff>1</span>)
+</span></span><span style=display:flex><span>grid <span style=color:#f92672>=</span> <span style=color:#e6db74>&#39;&#39;&#39;
+</span></span></span><span style=display:flex><span><span style=color:#e6db74> ####################################### 
+</span></span></span><span style=display:flex><span><span style=color:#e6db74> #                                     # 
+</span></span></span><span style=display:flex><span><span style=color:#e6db74> # ################################### #
+</span></span></span><span style=display:flex><span><span style=color:#e6db74> # #                                 # # 
+</span></span></span><span style=display:flex><span><span style=color:#e6db74> # # ############################### # #
+</span></span></span><span style=display:flex><span><span style=color:#e6db74> # # #                             # # #
+</span></span></span><span style=display:flex><span><span style=color:#e6db74> # # # ########################### # # #
+</span></span></span><span style=display:flex><span><span style=color:#e6db74> # # # #                         # # # #
+</span></span></span><span style=display:flex><span><span style=color:#e6db74> # # # # ####################### # # # # 
+</span></span></span><span style=display:flex><span><span style=color:#e6db74> # # # # #                     # # # # #
+</span></span></span><span style=display:flex><span><span style=color:#e6db74> # # # # # ################### # # # # #
+</span></span></span><span style=display:flex><span><span style=color:#e6db74> # # # # # #                 # # # # # #
+</span></span></span><span style=display:flex><span><span style=color:#e6db74> # # # # # # ############### # # # # # #
+</span></span></span><span style=display:flex><span><span style=color:#e6db74> # # # # # # #             # # # # # # # 
+</span></span></span><span style=display:flex><span><span style=color:#e6db74> # # # # # # # ########### # # # # # # #
+</span></span></span><span style=display:flex><span><span style=color:#e6db74> # # # # # # # #         # # # # # # # #
+</span></span></span><span style=display:flex><span><span style=color:#e6db74> # # # # # # # # ####### # # # # # # # #
+</span></span></span><span style=display:flex><span><span style=color:#e6db74> # # # # # # # # #     # # # # # # # # #
+</span></span></span><span style=display:flex><span><span style=color:#e6db74> # # # # # # # # # ### # # # # # # # # #
+</span></span></span><span style=display:flex><span><span style=color:#e6db74> # # # # # # # # # # # # # # # # # # # # 
+</span></span></span><span style=display:flex><span><span style=color:#e6db74> # # # # # # # # # ### # # # # # # # # #
+</span></span></span><span style=display:flex><span><span style=color:#e6db74> # # # # # # # # #     # # # # # # # # #
+</span></span></span><span style=display:flex><span><span style=color:#e6db74> # # # # # # # # ####### # # # # # # # #
+</span></span></span><span style=display:flex><span><span style=color:#e6db74> # # # # # # # #         # # # # # # # #
+</span></span></span><span style=display:flex><span><span style=color:#e6db74> # # # # # # # ########### # # # # # # #
+</span></span></span><span style=display:flex><span><span style=color:#e6db74> # # # # # # #             # # # # # # #
+</span></span></span><span style=display:flex><span><span style=color:#e6db74> # # # # # # ############### # # # # # #
+</span></span></span><span style=display:flex><span><span style=color:#e6db74> # # # # # #                 # # # # # #
+</span></span></span><span style=display:flex><span><span style=color:#e6db74> # # # # # ################### # # # # #
+</span></span></span><span style=display:flex><span><span style=color:#e6db74> # # # # #                     # # # # #
+</span></span></span><span style=display:flex><span><span style=color:#e6db74> # # # # ####################### # # # #
+</span></span></span><span style=display:flex><span><span style=color:#e6db74> # # # #                         # # # #
+</span></span></span><span style=display:flex><span><span style=color:#e6db74> # # # ########################### # # #
+</span></span></span><span style=display:flex><span><span style=color:#e6db74> # # #                             # # #
+</span></span></span><span style=display:flex><span><span style=color:#e6db74> # # ############################### # #
+</span></span></span><span style=display:flex><span><span style=color:#e6db74> # #                                 # #
+</span></span></span><span style=display:flex><span><span style=color:#e6db74> # ################################### #
+</span></span></span><span style=display:flex><span><span style=color:#e6db74> #                                     #
+</span></span></span><span style=display:flex><span><span style=color:#e6db74> #######################################
+</span></span></span><span style=display:flex><span><span style=color:#e6db74> &#39;&#39;&#39;</span><span style=color:#f92672>.</span>splitlines()
+</span></span><span style=display:flex><span>grid <span style=color:#f92672>=</span> [list(line<span style=color:#f92672>.</span>ljust(<span style=color:#ae81ff>41</span>, <span style=color:#e6db74>&#39; &#39;</span>)) <span style=color:#66d9ef>for</span> line <span style=color:#f92672>in</span> grid]
+</span></span><span style=display:flex><span>print(len(grid), len(grid[<span style=color:#ae81ff>0</span>]))
+</span></span><span style=display:flex><span><span style=color:#66d9ef>for</span> i <span style=color:#f92672>in</span> range(<span style=color:#ae81ff>9</span>, <span style=color:#f92672>-</span><span style=color:#ae81ff>1</span>, <span style=color:#f92672>-</span><span style=color:#ae81ff>1</span>):
+</span></span><span style=display:flex><span>    bound <span style=color:#f92672>=</span> <span style=color:#ae81ff>4</span><span style=color:#f92672>*</span>i <span style=color:#f92672>+</span> <span style=color:#ae81ff>3</span>
+</span></span><span style=display:flex><span>    c <span style=color:#f92672>=</span> prevInt(<span style=color:#ae81ff>4</span>)
+</span></span><span style=display:flex><span>    nextint <span style=color:#f92672>=</span> prevInt(bound)
+</span></span><span style=display:flex><span>    print(c, nextint)
+</span></span><span style=display:flex><span>    <span style=color:#66d9ef>if</span> c <span style=color:#f92672>==</span> <span style=color:#ae81ff>0</span>:
+</span></span><span style=display:flex><span>        <span style=color:#75715e># maze[(i8 / 2) + 20][(20 - (i8 / 2)) + nextInt] = &#39; &#39;;</span>
+</span></span><span style=display:flex><span>        grid[(bound <span style=color:#f92672>//</span> <span style=color:#ae81ff>2</span>) <span style=color:#f92672>+</span> <span style=color:#ae81ff>20</span>][(<span style=color:#ae81ff>20</span> <span style=color:#f92672>-</span> (bound <span style=color:#f92672>//</span> <span style=color:#ae81ff>2</span>)) <span style=color:#f92672>+</span> nextint] <span style=color:#f92672>=</span> <span style=color:#e6db74>&#39; &#39;</span>
+</span></span><span style=display:flex><span>    <span style=color:#66d9ef>elif</span> c <span style=color:#f92672>==</span> <span style=color:#ae81ff>1</span>:
+</span></span><span style=display:flex><span>        <span style=color:#75715e># maze[nextInt + (20 - (i8 / 2))][(i8 / 2) + 20] = &#39; &#39;;</span>
+</span></span><span style=display:flex><span>        grid[nextint <span style=color:#f92672>+</span> (<span style=color:#ae81ff>20</span> <span style=color:#f92672>-</span> (bound <span style=color:#f92672>//</span> <span style=color:#ae81ff>2</span>))][(bound <span style=color:#f92672>//</span> <span style=color:#ae81ff>2</span>) <span style=color:#f92672>+</span> <span style=color:#ae81ff>20</span>] <span style=color:#f92672>=</span> <span style=color:#e6db74>&#39; &#39;</span>
+</span></span><span style=display:flex><span>    <span style=color:#66d9ef>elif</span> c <span style=color:#f92672>==</span> <span style=color:#ae81ff>2</span>:
+</span></span><span style=display:flex><span>        <span style=color:#75715e># maze[20 - (i8 / 2)][(20 - (i8 / 2)) + nextInt] = &#39; &#39;;</span>
+</span></span><span style=display:flex><span>        grid[<span style=color:#ae81ff>20</span> <span style=color:#f92672>-</span> (bound <span style=color:#f92672>//</span> <span style=color:#ae81ff>2</span>)][(<span style=color:#ae81ff>20</span> <span style=color:#f92672>-</span> (bound <span style=color:#f92672>//</span> <span style=color:#ae81ff>2</span>)) <span style=color:#f92672>+</span> nextint] <span style=color:#f92672>=</span> <span style=color:#e6db74>&#39; &#39;</span>
+</span></span><span style=display:flex><span>    <span style=color:#66d9ef>elif</span> c <span style=color:#f92672>==</span> <span style=color:#ae81ff>3</span>:
+</span></span><span style=display:flex><span>        <span style=color:#75715e># maze[nextInt + (20 - (i8 / 2))][20 - (i8 / 2)] = &#39; &#39;;</span>
+</span></span><span style=display:flex><span>        grid[nextint <span style=color:#f92672>+</span> (<span style=color:#ae81ff>20</span> <span style=color:#f92672>-</span> (bound <span style=color:#f92672>//</span> <span style=color:#ae81ff>2</span>))][<span style=color:#ae81ff>20</span> <span style=color:#f92672>-</span> (bound <span style=color:#f92672>//</span> <span style=color:#ae81ff>2</span>)] <span style=color:#f92672>=</span> <span style=color:#e6db74>&#39; &#39;</span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#66d9ef>def</span> <span style=color:#a6e22e>print_grid</span>():
+</span></span><span style=display:flex><span>    <span style=color:#66d9ef>for</span> line <span style=color:#f92672>in</span> grid:
+</span></span><span style=display:flex><span>        print(<span style=color:#e6db74>&#39;&#39;</span><span style=color:#f92672>.</span>join(line))
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>x, y <span style=color:#f92672>=</span> <span style=color:#ae81ff>20</span>, <span style=color:#ae81ff>20</span>
+</span></span><span style=display:flex><span>visited <span style=color:#f92672>=</span> set()
+</span></span><span style=display:flex><span>queue <span style=color:#f92672>=</span> [(x, y, <span style=color:#e6db74>&#39;&#39;</span>)]
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>dxyc <span style=color:#f92672>=</span> [
+</span></span><span style=display:flex><span>    (<span style=color:#f92672>-</span><span style=color:#ae81ff>1</span>, <span style=color:#f92672>-</span><span style=color:#ae81ff>1</span>, <span style=color:#e6db74>&#39;Q&#39;</span>),
+</span></span><span style=display:flex><span>    (<span style=color:#ae81ff>0</span>, <span style=color:#f92672>-</span><span style=color:#ae81ff>1</span>, <span style=color:#e6db74>&#39;W&#39;</span>),
+</span></span><span style=display:flex><span>    (<span style=color:#ae81ff>1</span>, <span style=color:#f92672>-</span><span style=color:#ae81ff>1</span>, <span style=color:#e6db74>&#39;E&#39;</span>),
+</span></span><span style=display:flex><span>    (<span style=color:#f92672>-</span><span style=color:#ae81ff>1</span>, <span style=color:#ae81ff>0</span>, <span style=color:#e6db74>&#39;A&#39;</span>),
+</span></span><span style=display:flex><span>    (<span style=color:#ae81ff>1</span>, <span style=color:#ae81ff>0</span>, <span style=color:#e6db74>&#39;D&#39;</span>),
+</span></span><span style=display:flex><span>    (<span style=color:#f92672>-</span><span style=color:#ae81ff>1</span>, <span style=color:#ae81ff>1</span>, <span style=color:#e6db74>&#39;Z&#39;</span>),
+</span></span><span style=display:flex><span>    (<span style=color:#ae81ff>0</span>, <span style=color:#ae81ff>1</span>, <span style=color:#e6db74>&#39;S&#39;</span>),
+</span></span><span style=display:flex><span>    (<span style=color:#ae81ff>1</span>, <span style=color:#ae81ff>1</span>, <span style=color:#e6db74>&#39;C&#39;</span>),
+</span></span><span style=display:flex><span>]
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#66d9ef>while</span> queue:
+</span></span><span style=display:flex><span>    x, y, path <span style=color:#f92672>=</span> queue<span style=color:#f92672>.</span>pop(<span style=color:#ae81ff>0</span>)
+</span></span><span style=display:flex><span>    <span style=color:#66d9ef>if</span> (x, y) <span style=color:#f92672>in</span> visited:
+</span></span><span style=display:flex><span>        <span style=color:#66d9ef>continue</span>
+</span></span><span style=display:flex><span>    visited<span style=color:#f92672>.</span>add((x, y))
+</span></span><span style=display:flex><span>    <span style=color:#66d9ef>if</span> x <span style=color:#f92672>&lt;</span> <span style=color:#ae81ff>0</span> <span style=color:#f92672>or</span> x <span style=color:#f92672>&gt;</span> <span style=color:#ae81ff>40</span> <span style=color:#f92672>or</span> y <span style=color:#f92672>&lt;</span> <span style=color:#ae81ff>0</span> <span style=color:#f92672>or</span> y <span style=color:#f92672>&gt;</span> <span style=color:#ae81ff>40</span>:
+</span></span><span style=display:flex><span>        print(<span style=color:#e6db74>&#34; &#34;</span><span style=color:#f92672>.</span>join(list(path)))
+</span></span><span style=display:flex><span>        <span style=color:#66d9ef>break</span>
+</span></span><span style=display:flex><span>    <span style=color:#66d9ef>if</span> grid[y][x] <span style=color:#f92672>==</span> <span style=color:#e6db74>&#39; &#39;</span>:
+</span></span><span style=display:flex><span>        <span style=color:#66d9ef>for</span> dx, dy, c <span style=color:#f92672>in</span> dxyc:
+</span></span><span style=display:flex><span>            queue<span style=color:#f92672>.</span>append((x <span style=color:#f92672>+</span> dx, y <span style=color:#f92672>+</span> dy, path <span style=color:#f92672>+</span> c))
+</span></span></code></pre></div><pre tabindex=0><code class=language-terminal data-lang=terminal>$ nc 213.133.103.186 32878
+*maze here*
+R
+Here is a random number for you since i&#39;m nice: 0.7168512222588633
+*pass into script*
+Q Z S Z Z C D D D D D D C C E W W W W W W W E E W W W Q A A A A A A A A A A A Q Q A A A Z S S S S S S S S S S S S S S S S S S C D D D D D D D D D D D D D C C D D D D D E W W W W E C S S S S S S Z A A A A A A A A A A Z C D D D D D D D D D D D D E W W W W W W W W W W W W W W W W W W E E W W W W W W W W W W W W Q A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A Z S S S S S S S S S S S Z Q Q
+bucket{r4nd0m_n3v3r_w0rk5_e92fc72d}
+</code></pre><p><em>image writeup soon i swear</em></p></div></div></main></div><footer class=footer>© 2023 flocto, Built with
+<a href=https://gohugo.io class=footerLink>Hugo</a> and (an edited)
+<a href=https://github.com/LordMathis/hugo-theme-nightfall class=footerLink>Nightfall</a> theme</footer><script>MathJax={tex:{inlineMath:[["$","$"],["\\(","\\)"]],displayMath:[["$$","$$"],["\\[","\\]"]],processEscapes:!0,processEnvironments:!0},options:{skipHtmlTags:["script","noscript","style","textarea","pre"]}},window.addEventListener("load",e=>{document.querySelectorAll("mjx-container").forEach(function(e){e.parentElement.classList+="has-jax"})})</script><script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+<script type=text/javascript id=MathJax-script async src=https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js></script></div></body></html>
