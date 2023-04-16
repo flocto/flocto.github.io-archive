@@ -6,7 +6,6 @@ summary: Megathread for BucketCTF 2023, with writeups for the challenges I solve
 mathjax: true
 ---
 
-# BucketCTF 2023 Megathread
 Originally I was going to play alone but got drafted by my team so I ended up playing with them :joy:. Still, we ended up 6th place, could be better if we weren't also focusing MidnightSun and CursedCTF at the same time.
 
 Here's a collection of writeups for most of the challenges I solved. I'm making a seperate post for the Java Random ones, so expect that later as well.
@@ -24,13 +23,13 @@ Here's a collection of writeups for most of the challenges I solved. I'm making 
 | - [Minecraft 2](#minecraft-2---398---easy) |
 | - [Clocks 2](#clocks-2---408---hard) |
 | - [Drawing](#drawing---456---easy) |
-| - [Secret Bucket](#secret-Bucket---492---medium) |
+| - [Secret Bucket](#secret-bucket---492---medium) |
 | [Crypto](#crypto) |
 | - [Search-0](#search-0---380---easy) |
 | - [Search-1](#search-1---390---medium) |
 | - [Search-2](#search-2---422---medium) |
 | - [Search-3](#search-3---470---hard) |
-| - [Rotund Bits](#rotund-Bits---474---easy) |
+| - [Rotund Bits](#rotund-bits---474---easy) |
 | - [SCAlloped potatoes](#scalloped_potatoes---484---medium) |
 | [Reversing](#rev) |
 | - [Troll](#troll---464---hard) |
@@ -390,21 +389,27 @@ print(leak)
 
 Leaking $(p-2) (q-2)$ actually leaks $p + q$ through simple algebra:
 
-$$ (p-2)(q-2) = pq - 2p - 2q + 4 \\
-n = pq \\
-n - (p-2)(q-2) = 2p + 2q - 4 \\
-\frac{n - ((p-2)(q-2) - 4)}{2} = p + q
+$$ 
+\begin{aligned}
+(p-2)(q-2) &= pq - 2p - 2q + 4 \\\\
+n &= pq \\\\
+n - (p-2)(q-2) &= 2p + 2q - 4& \\\\
+\frac{n - ((p-2)(q-2) - 4)}{2} &= p + q
+\end{aligned}
 $$
 
 And given $p+q$, we can easily solve for $p$ and $q$ individually through the quadratic formula:
 $$ 
-s = p + q \\
-n = pq \\
-\text{Create quadratic with primes as roots} \\
-f(x) = (x - p)(x - q) \\
-f(x) = x^2 - (p + q)x + pq \\
-f(x) = x^2 - sx + n \\
-p,q = \frac{s \pm \sqrt{s^2 - 4n}}{2}
+\begin{aligned}
+s &= p + q \\\\
+n &= pq \\\\
+\\\\
+&\text{Create quadratic with primes as roots} \\\\
+f(x) &= (x - p)(x - q) \\\\
+f(x) &= x^2 - (p + q)x + pq \\\\
+f(x) &= x^2 - sx + n \\\\
+p,q &= \frac{s \pm \sqrt{s^2 - 4n}}{2}
+\end{aligned}
 $$
 
 ```python
