@@ -992,7 +992,7 @@ while queue:
 Now all we have to do it get a random number, pass it into our script, and submit the path to win!
 Full script below:
 ```python
-****multiplier = 0x5DEECE66D
+multiplier = 0x5DEECE66D
 addend = 0xB
 inv_mult = pow(multiplier, -1, 1 << 64)
 
