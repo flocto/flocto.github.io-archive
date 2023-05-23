@@ -1,0 +1,205 @@
+<!doctype html><html lang=en-us><head><title>DeadSecCTF 2023 - LCG Writeup | flocto</title><meta charset=utf-8><meta name=viewport content="width=device-width,initial-scale=1"><meta name=generator content="Hugo 0.111.3"><link rel=canonical href=/writeups/2023/deadsecctf/lcg-writeup/><link href=/sass/main.min.d5c6372979b097424e8b365d186ee2c4414af12738b1673ef13ae623846a4b06.css rel=stylesheet></head><body><div class=flexWrapper><header class=headerWrapper><div class=header><div><a href=/><span class=terminal>fl@cto ~ $</span></a></div><nav class=headerLinks><ul><li><a href=/about title>~/about</a></li><li><a href=/projects title>~/projects</a></li><li><a href=/writeups title>~/writeups</a></li><li><a href=/blog title>~/blog</a></li><li><a href=/ style=align-items:center;justify-content:center><img style=width:30px;height:30px;border-radius:15px;vertical-align:text-bottom src=/profile.png alt=Home></a></li></ul></nav></div></header><div class=content><main class=main><div class=postWrapper><h1>DeadSecCTF 2023 - LCG Writeup</h1><ul class=tagList><li class=tagItem><a class=tagLink href=/tags/2023/>2023</a></li><li class=tagItem><a class=tagLink href=/tags/deadsecctf/>deadsecctf</a></li><li class=tagItem><a class=tagLink href=/tags/crypto/>crypto</a></li></ul><div><p>Had a lot of fun playing DeadSecCTF this past weekend, here&rsquo;s a writeup for the challenge <code>LCG</code> in the <code>crypto</code> category.</p><h2 id=description>Description</h2><blockquote><p>Can you recover the message?</p><p><a href=#challpy>chall.py</a>
+<a href=#outtxt>out.txt</a></p></blockquote><h3 id=challpy>chall.py</h3><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-python data-lang=python><span style=display:flex><span><span style=color:#f92672>import</span> random
+</span></span><span style=display:flex><span><span style=color:#f92672>from</span> Crypto.Util.number <span style=color:#f92672>import</span> <span style=color:#f92672>*</span>
+</span></span><span style=display:flex><span><span style=color:#f92672>import</span> gmpy2
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#66d9ef>class</span> <span style=color:#a6e22e>LCG</span>:
+</span></span><span style=display:flex><span>    <span style=color:#66d9ef>def</span> __init__(self, a, c, m, seed):
+</span></span><span style=display:flex><span>        self<span style=color:#f92672>.</span>seed <span style=color:#f92672>=</span> seed
+</span></span><span style=display:flex><span>        self<span style=color:#f92672>.</span>multiplier <span style=color:#f92672>=</span> a
+</span></span><span style=display:flex><span>        self<span style=color:#f92672>.</span>increment <span style=color:#f92672>=</span> c
+</span></span><span style=display:flex><span>        self<span style=color:#f92672>.</span>modulus <span style=color:#f92672>=</span> m
+</span></span><span style=display:flex><span>    
+</span></span><span style=display:flex><span>    <span style=color:#66d9ef>def</span> <span style=color:#a6e22e>next</span>(self):
+</span></span><span style=display:flex><span>        self<span style=color:#f92672>.</span>seed <span style=color:#f92672>=</span> (self<span style=color:#f92672>.</span>multiplier<span style=color:#f92672>*</span>self<span style=color:#f92672>.</span>seed <span style=color:#f92672>+</span> self<span style=color:#f92672>.</span>increment) <span style=color:#f92672>%</span> self<span style=color:#f92672>.</span>modulus
+</span></span><span style=display:flex><span>        <span style=color:#66d9ef>return</span> self<span style=color:#f92672>.</span>seed
+</span></span><span style=display:flex><span>    
+</span></span><span style=display:flex><span>    <span style=color:#66d9ef>def</span> __str__(self):
+</span></span><span style=display:flex><span>        <span style=color:#66d9ef>return</span> <span style=color:#e6db74>&#34;, </span><span style=color:#ae81ff>\n</span><span style=color:#e6db74>&#34;</span><span style=color:#f92672>.</span>join(map(str, [self<span style=color:#f92672>.</span>seed, self<span style=color:#f92672>.</span>multiplier, self<span style=color:#f92672>.</span>increment, self<span style=color:#f92672>.</span>modulus]))
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#66d9ef>def</span> <span style=color:#a6e22e>gen_primes</span>(PRIME_SIZE):
+</span></span><span style=display:flex><span>    lcg <span style=color:#f92672>=</span> LCG(random<span style=color:#f92672>.</span>getrandbits(PRIME_SIZE<span style=color:#f92672>//</span><span style=color:#ae81ff>4</span>), random<span style=color:#f92672>.</span>getrandbits(PRIME_SIZE<span style=color:#f92672>//</span><span style=color:#ae81ff>4</span>), random<span style=color:#f92672>.</span>getrandbits(PRIME_SIZE<span style=color:#f92672>//</span><span style=color:#ae81ff>4</span>), random<span style=color:#f92672>.</span>getrandbits(PRIME_SIZE<span style=color:#f92672>//</span><span style=color:#ae81ff>4</span>))    
+</span></span><span style=display:flex><span>    
+</span></span><span style=display:flex><span>    r1 <span style=color:#f92672>=</span> random<span style=color:#f92672>.</span>getrandbits(PRIME_SIZE<span style=color:#f92672>//</span><span style=color:#ae81ff>4</span>)
+</span></span><span style=display:flex><span>    p <span style=color:#f92672>=</span> r1 <span style=color:#f92672>&lt;&lt;</span> ((PRIME_SIZE<span style=color:#f92672>*</span><span style=color:#ae81ff>3</span>)<span style=color:#f92672>//</span><span style=color:#ae81ff>4</span>)
+</span></span><span style=display:flex><span>    <span style=color:#66d9ef>for</span> _ <span style=color:#f92672>in</span> range(<span style=color:#ae81ff>3</span>):
+</span></span><span style=display:flex><span>        p <span style=color:#f92672>=</span> p <span style=color:#f92672>|</span> (lcg<span style=color:#f92672>.</span>next() <span style=color:#f92672>&lt;&lt;</span> (PRIME_SIZE<span style=color:#f92672>*</span>(<span style=color:#ae81ff>2</span> <span style=color:#f92672>-</span> _))<span style=color:#f92672>//</span><span style=color:#ae81ff>4</span>)
+</span></span><span style=display:flex><span>    
+</span></span><span style=display:flex><span>    r2 <span style=color:#f92672>=</span> random<span style=color:#f92672>.</span>getrandbits(PRIME_SIZE<span style=color:#f92672>//</span><span style=color:#ae81ff>4</span>)
+</span></span><span style=display:flex><span>    q <span style=color:#f92672>=</span> r2 <span style=color:#f92672>&lt;&lt;</span> ((PRIME_SIZE<span style=color:#f92672>*</span><span style=color:#ae81ff>3</span>)<span style=color:#f92672>//</span><span style=color:#ae81ff>4</span>)
+</span></span><span style=display:flex><span>    <span style=color:#66d9ef>for</span> _ <span style=color:#f92672>in</span> range(<span style=color:#ae81ff>3</span>):
+</span></span><span style=display:flex><span>        q <span style=color:#f92672>=</span> q <span style=color:#f92672>|</span> (lcg<span style=color:#f92672>.</span>next() <span style=color:#f92672>&lt;&lt;</span> (PRIME_SIZE<span style=color:#f92672>*</span>(<span style=color:#ae81ff>2</span> <span style=color:#f92672>-</span> _))<span style=color:#f92672>//</span><span style=color:#ae81ff>4</span>)
+</span></span><span style=display:flex><span>        
+</span></span><span style=display:flex><span>    <span style=color:#66d9ef>return</span> lcg, p, q
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#66d9ef>while</span> <span style=color:#66d9ef>True</span>:
+</span></span><span style=display:flex><span>    lcg, p, q <span style=color:#f92672>=</span> gen_primes(<span style=color:#ae81ff>512</span>)
+</span></span><span style=display:flex><span>    <span style=color:#66d9ef>if</span> gmpy2<span style=color:#f92672>.</span>is_prime(p) <span style=color:#f92672>and</span> gmpy2<span style=color:#f92672>.</span>is_prime(q) <span style=color:#f92672>and</span> gmpy2<span style=color:#f92672>.</span>gcd(lcg<span style=color:#f92672>.</span>multiplier, lcg<span style=color:#f92672>.</span>modulus) <span style=color:#f92672>==</span> <span style=color:#ae81ff>1</span>:
+</span></span><span style=display:flex><span>        <span style=color:#66d9ef>break</span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>n <span style=color:#f92672>=</span> p <span style=color:#f92672>*</span> q
+</span></span><span style=display:flex><span>e <span style=color:#f92672>=</span> <span style=color:#ae81ff>65537</span>
+</span></span><span style=display:flex><span>flag <span style=color:#f92672>=</span> <span style=color:#e6db74>b</span><span style=color:#e6db74>&#39;&#39;</span>
+</span></span><span style=display:flex><span>c <span style=color:#f92672>=</span> pow(bytes_to_long(flag), e, n)
+</span></span><span style=display:flex><span>print(<span style=color:#e6db74>f</span><span style=color:#e6db74>&#34;n: </span><span style=color:#e6db74>{</span>n<span style=color:#e6db74>}</span><span style=color:#e6db74>&#34;</span>)
+</span></span><span style=display:flex><span>print(<span style=color:#e6db74>f</span><span style=color:#e6db74>&#34;ct: </span><span style=color:#e6db74>{</span>c<span style=color:#e6db74>}</span><span style=color:#e6db74>&#34;</span>)
+</span></span><span style=display:flex><span>print(<span style=color:#e6db74>&#34;Hint:&#34;</span>)
+</span></span><span style=display:flex><span>print([lcg<span style=color:#f92672>.</span>next() <span style=color:#66d9ef>for</span> _ <span style=color:#f92672>in</span> range(<span style=color:#ae81ff>6</span>)])
+</span></span></code></pre></div><h3 id=outtxt>out.txt</h3><pre tabindex=0><code>n: 21650447514664703683541519919331263390282460469744888634490387443119262785059244453207960009159682413880209329211270923006772751974531441721185385117102290236861537255410467283919771278372439649180599019262938453870697814603482585923290155250911013461308363715765472530666765831515068628482160014076801654521
+ct: 13119263762666966865889936515574328574427409372529276945448580211178603280310168998625170993340627371121987348265853339044876374353275949199559703791552498065356283102983556442205370872035849628351308403614183495058585452791359893308496622183117417598843112140605324797308265631765340150190302633479928043831
+Hint:
+[29861218495988619292793747700054834633, 80515105569441253388392760789853242718, 146729873894560318431962601721322042903, 147107348315338274128018394071748133508, 166087854880219056255852907837404957463, 210401924703541158042341118614982072753]
+</code></pre><p>So here&rsquo;s the main setup:</p><ul><li>We&rsquo;re given a basic RSA encrypted flag with <code>n</code> and <code>ct</code>.</li><li>We also have an LCG that generates the lower 3/4ths of <code>p</code> and <code>q</code> (the upper 1/4th uses a different PRNG).</li><li>We&rsquo;re given 6 outputs of the LCG.</li></ul><p>This means that somehow, we first need to completely recover the LCG, step backwards to find the lower bits of the primes, then factor <code>n</code> to break the RSA encryption and get the flag. Let&rsquo;s get started!</p><h2 id=breaking-lcgs-the-easy-part>Breaking LCGs: The Easy Part</h2><p>Let&rsquo;s start by cracking the LCG first. There&rsquo;s plenty of documentation online on solving LCGs with 0 information, but I&rsquo;ll try to walk through it here.</p><h3 id=finding-the-modulus>Finding the modulus</h3><p>First we need to recover the modulus of the LCG. To do this, we can use a simple trick to recover multiples of the modulus and <code>gcd</code> them together to find either the modulus itself or a low multiple.</p><p>Let&rsquo;s set up the following equations and define $S_n$ as the $n$th output of the LCG, as well as $a$ as the multiplier, $c$ as the increment, and $m$ as the modulus:</p><p>$$
+\begin{align}
+S_n &= aS_{n-1} + c &\mod m \\
+T_n &= S_{n+1} - S_n &\mod m\\
+\\
+T_0 &= S_1 - S_0 \\
+T_0 &= aS_0 + c - S_0 &\mod m \\
+T_1 &= S_2 - S_1 \\
+T_1 &= aS_1 + c - S_1 &\mod m \\
+\end{align}
+$$</p><p>Between consecutive elements in $T$, we can notice this pattern:</p><p>$$
+\begin{align}
+T_n &= aS_n + c - S_n &\mod m \\
+T_n &= a(aS_{n-1} + c) + c - (aS_{n-1} + c) &\mod m \\
+T_n &= a^2S_{n-1} + ac + c - aS_{n-1} - c &\mod m \\
+T_n &= a(aS_{n-1} + c - S_{n-1}) &\mod m \\
+T_n &= aT_{n-1} &\mod m \\
+\end{align}
+$$</p><p>Meaning that $T$ forms its own LCG with the same modulus and multiplier but no increment. Witht this new LCG, we can now easily find the modulus by just multiplying different items in $T$ to get differences that are $k\cdot m$ for some integer $k$.</p><p>$$
+\begin{align}
+T_1 &= aT_0 &\mod m \\
+T_2 &= aT_1 &\mod m \\
+\\
+T_1^2 &= a^2T_0^2 &\mod m \\
+T_2T_0 &= (aT_1)(T_0) \\
+&= (a(aT_0))T_0 \\
+&= a^2T_0^2 &\mod m \\
+\\
+&\boxed{T_1^2 - T_2T_0 = 0 \mod m = k\cdot m}& \\
+\end{align}
+$$</p><p>If we gather enough of these, we can just <code>gcd</code> them together to find the modulus. Unfortunately, the output is chosen so that we get a multiple of the modulus, but since we know the number has to be around 128 bits, we can easily guess that it is a factor of $5$ too large.</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-python data-lang=python><span style=display:flex><span><span style=color:#f92672>from</span> math <span style=color:#f92672>import</span> gcd
+</span></span><span style=display:flex><span>S <span style=color:#f92672>=</span> [<span style=color:#ae81ff>29861218495988619292793747700054834633</span>, <span style=color:#ae81ff>80515105569441253388392760789853242718</span>, <span style=color:#ae81ff>146729873894560318431962601721322042903</span>, <span style=color:#ae81ff>147107348315338274128018394071748133508</span>, <span style=color:#ae81ff>166087854880219056255852907837404957463</span>, <span style=color:#ae81ff>210401924703541158042341118614982072753</span>]
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>Ts <span style=color:#f92672>=</span> [S[i<span style=color:#f92672>+</span><span style=color:#ae81ff>1</span>] <span style=color:#f92672>-</span> S[i] <span style=color:#66d9ef>for</span> i <span style=color:#f92672>in</span> range(len(S)<span style=color:#f92672>-</span><span style=color:#ae81ff>1</span>)]
+</span></span><span style=display:flex><span>Us <span style=color:#f92672>=</span> [abs(Ts[i<span style=color:#f92672>+</span><span style=color:#ae81ff>2</span>] <span style=color:#f92672>*</span> Ts[i] <span style=color:#f92672>-</span> Ts[i<span style=color:#f92672>+</span><span style=color:#ae81ff>1</span>] <span style=color:#f92672>*</span> Ts[i<span style=color:#f92672>+</span><span style=color:#ae81ff>1</span>]) <span style=color:#66d9ef>for</span> i <span style=color:#f92672>in</span> range(len(Ts)<span style=color:#f92672>-</span><span style=color:#ae81ff>2</span>)]
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>M <span style=color:#f92672>=</span> abs(gcd(<span style=color:#f92672>*</span>Us))
+</span></span><span style=display:flex><span>print(M, int(M)<span style=color:#f92672>.</span>bit_length())
+</span></span><span style=display:flex><span><span style=color:#f92672>&gt;&gt;&gt;</span> <span style=color:#ae81ff>1224107675531864356603669618231679702075</span> <span style=color:#ae81ff>130</span>
+</span></span></code></pre></div><pre tabindex=0><code>1224107675531864356603669618231679702075/5 = 
+244821535106372871320733923646335940415
+</code></pre><p>Nice! We&rsquo;ve recovered the modulus, so we can move on to part 2, recovering the multiplier.</p><h3 id=recovering-the-multiplier>Recovering the multiplier</h3><p>Let&rsquo;s go back to the $T$ LCG earlier, since the multiplier is the only unknown there.
+We should be able to easily recover $a$ like so:</p><p>$$
+\begin{align}
+T_1 &= aT_0 &\mod m \\
+a &= T_1T_0^{-1} &\mod m \\
+\end{align}
+$$</p><p>But if we try this out in Python, we get an error&mldr;</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-python data-lang=python><span style=display:flex><span><span style=color:#75715e># continuing from before</span>
+</span></span><span style=display:flex><span>Ts <span style=color:#f92672>=</span> [T <span style=color:#f92672>%</span> M <span style=color:#66d9ef>for</span> T <span style=color:#f92672>in</span> Ts]
+</span></span><span style=display:flex><span>T0 <span style=color:#f92672>=</span> Ts[<span style=color:#ae81ff>0</span>]
+</span></span><span style=display:flex><span>T1 <span style=color:#f92672>=</span> Ts[<span style=color:#ae81ff>1</span>]
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>A <span style=color:#f92672>=</span> (T1 <span style=color:#f92672>*</span> pow(T0, <span style=color:#f92672>-</span><span style=color:#ae81ff>1</span>, M)) <span style=color:#f92672>%</span> M
+</span></span><span style=display:flex><span>print(A)
+</span></span></code></pre></div><pre tabindex=0><code>Traceback (most recent call last):
+  File &#34;test.py&#34;, line 16, in &lt;module&gt;
+    A = (T1 * pow(T0, -1, M)) % M
+              ^^^^^^^^^^^^^^
+ValueError: base is not invertible for the given modulus
+</code></pre><p>Unfortunately, our $T$ values aren&rsquo;t coprime with $m$, so we can&rsquo;t just take the modular inverse. Thankfully, we can still recover $a$ very simply by the following identity:</p><p>$$
+\begin{align}
+g &= gcd(T_1, T_0, m) \\
+T_1 &= aT_0 &\mod m \\
+\frac{T_1}{g} &= a\frac{T_0}{g} &\mod \frac{m}{g} \\
+a &= \frac{T_1}{g}/\frac{T_0}{g} &\mod \frac{m}{g} \\
+\end{align}
+$$</p><p>(Just a note, if $a$ is too small after this calculation, we can just add $m/g$ to it until it properly satisfies the $T$ LCG)</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-python data-lang=python><span style=display:flex><span><span style=color:#75715e># continuing from before</span>
+</span></span><span style=display:flex><span>Ts <span style=color:#f92672>=</span> [T <span style=color:#f92672>%</span> M <span style=color:#66d9ef>for</span> T <span style=color:#f92672>in</span> Ts]
+</span></span><span style=display:flex><span>T0 <span style=color:#f92672>=</span> Ts[<span style=color:#ae81ff>0</span>]
+</span></span><span style=display:flex><span>T1 <span style=color:#f92672>=</span> Ts[<span style=color:#ae81ff>1</span>]
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>G <span style=color:#f92672>=</span> gcd(M, gcd(T1, T0))
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>M_g <span style=color:#f92672>=</span> M <span style=color:#f92672>//</span> G
+</span></span><span style=display:flex><span>T1_g <span style=color:#f92672>=</span> T1 <span style=color:#f92672>//</span> G
+</span></span><span style=display:flex><span>T0_g <span style=color:#f92672>=</span> T0 <span style=color:#f92672>//</span> G
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>A <span style=color:#f92672>=</span> (T1_g <span style=color:#f92672>*</span> pow(T0_g, <span style=color:#f92672>-</span><span style=color:#ae81ff>1</span>, M_g)) <span style=color:#f92672>%</span> M_g
+</span></span><span style=display:flex><span>print(A, T1 <span style=color:#f92672>==</span> T0 <span style=color:#f92672>*</span> A <span style=color:#f92672>%</span> M)
+</span></span><span style=display:flex><span><span style=color:#f92672>&gt;&gt;&gt;</span> <span style=color:#ae81ff>761998600219052390751011947734077631</span> <span style=color:#66d9ef>True</span>
+</span></span></code></pre></div><h3 id=calculating-the-increment>Calculating the increment</h3><p>Now the last part is the easiest, all we have to do is</p><p>$$
+\begin{align}
+S_1 &= aS_0 + c &\mod m \\
+c &= S_1 - aS_0 &\mod m \\
+\end{align}
+$$</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-python data-lang=python><span style=display:flex><span>C <span style=color:#f92672>=</span> S[<span style=color:#ae81ff>1</span>] <span style=color:#f92672>-</span> S[<span style=color:#ae81ff>0</span>] <span style=color:#f92672>*</span> A <span style=color:#f92672>%</span> M
+</span></span><span style=display:flex><span>print(C)
+</span></span><span style=display:flex><span><span style=color:#f92672>&gt;&gt;&gt;</span> <span style=color:#ae81ff>166465905477134684675482981011786701870</span>
+</span></span></code></pre></div><h3 id=going-backwards>Going backwards</h3><p>Now that we have all the LCG parameters, we can simply just step backwards to get the low bits of both primes.</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-python data-lang=python><span style=display:flex><span><span style=color:#75715e># inside LCG class</span>
+</span></span><span style=display:flex><span>    self<span style=color:#f92672>.</span>inv_mult <span style=color:#f92672>=</span> int(pow(a, <span style=color:#f92672>-</span><span style=color:#ae81ff>1</span>, m))
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#66d9ef>def</span> <span style=color:#a6e22e>prev</span>(self):
+</span></span><span style=display:flex><span>    self<span style=color:#f92672>.</span>seed <span style=color:#f92672>=</span> (self<span style=color:#f92672>.</span>inv_mult <span style=color:#f92672>*</span> (self<span style=color:#f92672>.</span>seed <span style=color:#f92672>-</span> self<span style=color:#f92672>.</span>increment)) <span style=color:#f92672>%</span> self<span style=color:#f92672>.</span>modulus
+</span></span><span style=display:flex><span>    <span style=color:#66d9ef>return</span> self<span style=color:#f92672>.</span>seed
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>lcg <span style=color:#f92672>=</span> LCG(A, C, M, S[<span style=color:#ae81ff>0</span>])
+</span></span><span style=display:flex><span>print(lcg)
+</span></span><span style=display:flex><span><span style=color:#66d9ef>for</span> _ <span style=color:#f92672>in</span> range(<span style=color:#ae81ff>7</span>):
+</span></span><span style=display:flex><span>    print(lcg<span style=color:#f92672>.</span>prev())
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>PRIME_SIZE <span style=color:#f92672>=</span> <span style=color:#ae81ff>512</span>
+</span></span><span style=display:flex><span>p_low <span style=color:#f92672>=</span> <span style=color:#ae81ff>0</span>
+</span></span><span style=display:flex><span><span style=color:#66d9ef>for</span> _ <span style=color:#f92672>in</span> range(<span style=color:#ae81ff>3</span>):
+</span></span><span style=display:flex><span>    p_low <span style=color:#f92672>=</span> p_low <span style=color:#f92672>|</span> (lcg<span style=color:#f92672>.</span>next() <span style=color:#f92672>&lt;&lt;</span> (PRIME_SIZE<span style=color:#f92672>*</span>(<span style=color:#ae81ff>2</span> <span style=color:#f92672>-</span> _))<span style=color:#f92672>//</span><span style=color:#ae81ff>4</span>)
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>q_low <span style=color:#f92672>=</span> <span style=color:#ae81ff>0</span>
+</span></span><span style=display:flex><span><span style=color:#66d9ef>for</span> _ <span style=color:#f92672>in</span> range(<span style=color:#ae81ff>3</span>):
+</span></span><span style=display:flex><span>    q_low <span style=color:#f92672>=</span> q_low <span style=color:#f92672>|</span> (lcg<span style=color:#f92672>.</span>next() <span style=color:#f92672>&lt;&lt;</span> (PRIME_SIZE<span style=color:#f92672>*</span>(<span style=color:#ae81ff>2</span> <span style=color:#f92672>-</span> _))<span style=color:#f92672>//</span><span style=color:#ae81ff>4</span>)
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>print(p_low, p_low<span style=color:#f92672>.</span>bit_length())
+</span></span><span style=display:flex><span>print(q_low, q_low<span style=color:#f92672>.</span>bit_length())
+</span></span></code></pre></div><pre tabindex=0><code>13840502788412896965686804480699888011094508190835972222953823231587129208721991127413360932081103349687895622036439 383
+7320629874514098189615003088850781500246108104301157430019735253104825244834103750925350260034317414424601821524399 382
+</code></pre><h2 id=actually-just-univariate-in-disguise--sage--math-ahead->Actually just Univariate in disguise? ⚠️ Sage & math ahead ⚠️</h2><p>Now we have the low bits of both primes, we can set up a bivariate equation which should give us the high bits like so:</p><p>$$
+\begin{align}
+k &= 384 \text{(offset for high bits)} \\
+\\
+f &= (p_{low} + p_{high}2^k)(q_{low} + q_{high}2^k) - n \\
+\end{align}
+$$</p><p>But actually, because these equations are over the integers, we can use the <code>monic</code> and <code>small_roots</code> functions in SageMath to
+create a univariate polynomial with an easy solution!</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-python data-lang=python><span style=display:flex><span>P<span style=color:#f92672>.&lt;</span>x<span style=color:#f92672>&gt;</span> <span style=color:#f92672>=</span> PolynomialRing(Zmod(n))
+</span></span><span style=display:flex><span>p_small <span style=color:#f92672>=</span> <span style=color:#ae81ff>13840502788412896965686804480699888011094508190835972222953823231587129208721991127413360932081103349687895622036439</span> <span style=color:#75715e># from above</span>
+</span></span><span style=display:flex><span>f <span style=color:#f92672>=</span> p_small <span style=color:#f92672>+</span> x<span style=color:#f92672>*</span><span style=color:#ae81ff>2</span><span style=color:#f92672>^</span><span style=color:#ae81ff>384</span>
+</span></span><span style=display:flex><span>f <span style=color:#f92672>=</span> f<span style=color:#f92672>.</span>monic()
+</span></span><span style=display:flex><span>show(f)
+</span></span><span style=display:flex><span>p_high <span style=color:#f92672>=</span> f<span style=color:#f92672>.</span>small_roots(beta<span style=color:#f92672>=</span><span style=color:#ae81ff>0.4</span>, X<span style=color:#f92672>=</span><span style=color:#ae81ff>2</span><span style=color:#f92672>^</span><span style=color:#ae81ff>128</span>)[<span style=color:#ae81ff>0</span>] <span style=color:#75715e># beta should be less than 1/2</span>
+</span></span><span style=display:flex><span>print(p_high)
+</span></span></code></pre></div><pre tabindex=0><code>x + &lt;very big number here&gt;
+51124072313420104261781687898895862037 # our p_high!
+</code></pre><p>In fact, when I was solving this challenge originally, I forgot that <code>monic</code> existed, and kept trying to jank some method for <code>small_roots</code>.
+Eventually, I stumbled upon <a href=https://github.com/ubuntor/coppersmith-algorithm/blob/main/coppersmith.sage>this implementation</a> which I used to solve (It implements <a href=http://www.crypto-uni.lu/jscoron/publications/bivariate.pdf>this paper</a>).</p><p>It creates a bunch of monomials from the original bivariate polynomial and uses LLL to solve for small roots. If you want specifics, I recommended reading the paper and checking out the code.</p><p>Anyway, the solve implementation is the same, just call the provided <code>coron</code> method with the correct parameters.</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-python data-lang=python><span style=display:flex><span>X <span style=color:#f92672>=</span> <span style=color:#ae81ff>2</span><span style=color:#f92672>^</span>(int(p_low)<span style=color:#f92672>.</span>bit_length()<span style=color:#f92672>+</span><span style=color:#ae81ff>1</span>)
+</span></span><span style=display:flex><span>Y <span style=color:#f92672>=</span> <span style=color:#ae81ff>2</span><span style=color:#f92672>^</span>(int(q_low)<span style=color:#f92672>.</span>bit_length()<span style=color:#f92672>+</span><span style=color:#ae81ff>1</span>)
+</span></span><span style=display:flex><span>P<span style=color:#f92672>.&lt;</span>x,y<span style=color:#f92672>&gt;</span> <span style=color:#f92672>=</span> PolynomialRing(ZZ)
+</span></span><span style=display:flex><span>KNOWN_SIZE <span style=color:#f92672>=</span> PRIME_SIZE <span style=color:#f92672>//</span> <span style=color:#ae81ff>4</span> <span style=color:#f92672>*</span> <span style=color:#ae81ff>3</span>
+</span></span><span style=display:flex><span>poly <span style=color:#f92672>=</span> (x <span style=color:#f92672>*</span> <span style=color:#ae81ff>2</span><span style=color:#f92672>^</span>KNOWN_SIZE <span style=color:#f92672>+</span> p_low) <span style=color:#f92672>*</span> (y <span style=color:#f92672>*</span> <span style=color:#ae81ff>2</span><span style=color:#f92672>^</span>KNOWN_SIZE <span style=color:#f92672>+</span> q_low) <span style=color:#f92672>-</span> N
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>p_high, q_high <span style=color:#f92672>=</span> coron(poly, X, Y, debug<span style=color:#f92672>=</span><span style=color:#66d9ef>True</span>)[<span style=color:#ae81ff>0</span>]
+</span></span><span style=display:flex><span>p <span style=color:#f92672>=</span> p_high <span style=color:#f92672>*</span> <span style=color:#ae81ff>2</span><span style=color:#f92672>^</span>KNOWN_SIZE <span style=color:#f92672>+</span> p_low
+</span></span><span style=display:flex><span>q <span style=color:#f92672>=</span> q_high <span style=color:#f92672>*</span> <span style=color:#ae81ff>2</span><span style=color:#f92672>^</span>KNOWN_SIZE <span style=color:#f92672>+</span> q_low
+</span></span><span style=display:flex><span>print(p, q)
+</span></span></code></pre></div><pre tabindex=0><code>2014391014078298385848382718603864559304182057702332106747947726391450683922565863407711433231851216065404029594338847221099546815781164798298144058780631 10747887258904919568852319173708167129975394787092626003408658827329574207417581519371916706345292847334280224997653414111932233127444601482464256870134191
+</code></pre><h2 id=flag>Flag</h2><p>Finally, we have recovered $p$ and $q$. All we need to do now is calculate $d$ and decrypt the flag.</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-python data-lang=python><span style=display:flex><span><span style=color:#f92672>from</span> Crypto.Util.number <span style=color:#f92672>import</span> long_to_bytes
+</span></span><span style=display:flex><span>phi <span style=color:#f92672>=</span> (p <span style=color:#f92672>-</span> <span style=color:#ae81ff>1</span>) <span style=color:#f92672>*</span> (q <span style=color:#f92672>-</span> <span style=color:#ae81ff>1</span>)
+</span></span><span style=display:flex><span>e <span style=color:#f92672>=</span> <span style=color:#ae81ff>65537</span>
+</span></span><span style=display:flex><span>d <span style=color:#f92672>=</span> inverse_mod(e, phi)
+</span></span><span style=display:flex><span>ct <span style=color:#f92672>=</span> <span style=color:#ae81ff>13119263762666966865889936515574328574427409372529276945448580211178603280310168998625170993340627371121987348265853339044876374353275949199559703791552498065356283102983556442205370872035849628351308403614183495058585452791359893308496622183117417598843112140605324797308265631765340150190302633479928043831</span>
+</span></span><span style=display:flex><span>m <span style=color:#f92672>=</span> int(pow(ct, d, N))
+</span></span><span style=display:flex><span>print(long_to_bytes(m))
+</span></span></code></pre></div><pre tabindex=0><code>b&#39;Dead{7d19a88ab11151c222a8b}&#39;
+</code></pre><p>GG! 😄</p><h2 id=closing-thoughts>Closing Thoughts</h2><p>I had a lot of fun doing this challenge (<em>cough cough</em> even if vishi lied about our modulus being wrong <em>cough cough</em>), and I feel like I&rsquo;m actually starting to understand these types of Coppersmith attacks and polynomials a lot more 😎.</p><p>It&rsquo;s been a long journey since I first started doing CTFs so it&rsquo;s nice to do these challenges where I can see my own progress. I hope you enjoyed reading this writeup, and I&rsquo;ll see you in the next one! 👋</p></div></div></main></div><footer class=footer>© 2023 flocto, Built with
+<a href=https://gohugo.io class=footerLink>Hugo</a> and (an edited)
+<a href=https://github.com/LordMathis/hugo-theme-nightfall class=footerLink>Nightfall</a> theme</footer><script>MathJax={tex:{inlineMath:[["$","$"],["\\(","\\)"]],displayMath:[["$$","$$"],["\\[","\\]"]],processEscapes:!0,processEnvironments:!0},options:{skipHtmlTags:["script","noscript","style","textarea","pre"]}},window.addEventListener("load",e=>{document.querySelectorAll("mjx-container").forEach(function(e){e.parentElement.classList+="has-jax"})})</script><script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+<script type=text/javascript id=MathJax-script async src=https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js></script></div></body></html>
