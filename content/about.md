@@ -6,6 +6,9 @@ aliases = ["about-us", "contact"]
 author = "flocto"
 +++
 
-Placeholder about page until I can figure out what I want to put here.
+I play CTFs and program stuff. Going to TAMU (for now). 
 
-I play CTFs and program stuff sometimes. Also a high school senior.
+discord: fourleggedoctopus#3284
+twitter: [@fl0ct0](https://twitter.com/fl0ct0)
+github: [flocto](https://github.com/flocto)
+
