@@ -323,7 +323,7 @@ m = int(pow(ct, d, N))
 print(long_to_bytes(m))
 ```
 filename=flag.txt
-```
+```text
 b'Dead{7d19a88ab11151c222a8b}'
 ```
 GG! :smile:
