@@ -22,6 +22,64 @@
             </main>
         </div>
 
+        <script>
+            function handle_open(e) {s
+                e.target.classList.toggle("open");
+                if (e.target.classList.contains("open")) {
+                    e.target.textContent = "Click to collapse " + e.target.textContent.split(" ").slice(3).join(" ");
+                } else {
+                    e.target.textContent = "Click to expand " + e.target.textContent.split(" ").slice(3).join(" ");
+                }
+            }
+
+            let code_divs = document.querySelectorAll("div.highlight");
+            let to_remove = [];
+            for (let div of code_divs) {
+                let filename = "";
+                let prev = div.previousElementSibling;
+                if (prev.tagName == "P") {
+                    prev = prev.textContent;
+                    if (prev.startsWith("filename")) {
+                        filename = prev.split("=")[1].trim();
+                        to_remove.push(div.previousElementSibling);
+                    }
+                }
+                
+                let code = div.querySelector("pre code");
+                let lines = code.textContent.split("\n").length;
+
+                if (filename !== "" || lines > 10) {
+
+                    console.log(div);
+                    let wrapper = document.createElement("details");
+                    let summary = document.createElement("summary");
+                    let summary_inner = document.createElement("span");
+                    
+                    summary_inner.textContent = "Click to expand";
+                    if (filename !== "") {
+                        summary_inner.textContent += " " + filename;
+                        wrapper.setAttribute("id", filename);
+                    }
+                    summary_inner.classList.add("code-summary-inner");
+                    summary_inner.addEventListener("click", handle_open);
+
+                    summary.appendChild(summary_inner);
+                    summary.classList.add("code-summary");
+
+                    code.classList.add("code-inner");
+                    div.parentNode.insertBefore(wrapper, div);
+
+                    wrapper.appendChild(summary);
+                    wrapper.appendChild(div);
+                    wrapper.classList.add("code-wrapper");
+                }
+            }
+
+            for (let el of to_remove) {
+                el.remove();
+            }
+        </script>
+
 
         {{ partial "footer.html" . }}
     </div>

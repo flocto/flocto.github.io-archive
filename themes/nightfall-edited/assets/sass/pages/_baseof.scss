@@ -29,3 +29,31 @@
   width: 100%;
   height: 100%;
 }
+
+.code-wrapper {
+  border-radius: 5px;
+  margin: 5px 0 5px 0;
+}
+
+.code-summary {
+  border-radius: 5px;
+  padding: 10px;
+  background-color: $backgroundDarker;
+  -webkit-touch-callout: none; 
+    -webkit-user-select: none; 
+     -khtml-user-select: none;
+       -moz-user-select: none; 
+        -ms-user-select: none; 
+            user-select: none; 
+  border-bottom: 3px solid $orange;
+  transition: all 0.15s ease-in-out;
+}
+
+.code-summary:hover {
+  background-color: $backgroundLighter;
+  cursor: pointer;
+}
+
+.code-inner {
+  border-radius: 5px;
+}
