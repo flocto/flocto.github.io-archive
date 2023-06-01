@@ -80,7 +80,7 @@ Again, nothing to see here, just a survey.
 
 The first *real* challenge. The original challenge didn't release with the Python file, so let's start with the b64 file.
 Opening it up, we get:
-```
+```text
 UEsDBAoAAAAAADmPYVYAAAAAAAAAAAAAAAAJABwAY29tbWFuZHMvVVQJAAN95v9jfeb/Y3V4CwABBOgDAAAE6AMAAFBLAwQKAAAAAAAtj2FWWhLOtxMAAAATAAAAFAAcAGNvbW1hbmRzL2NvbW1hbmQudHh0VVQJAANm5v9jZub/Y3V4CwABBOgDAAAE6AMAAGVjaG8gJ0hlbGxvIFdvcmxkISdQSwMEFAAAAAgAMY9hVpwcB1ZUAAAAaQAAABIAHABjb21tYW5kcy9SRUFETUUubWRVVAkAA27m/2Nu5v9jdXgLAAEE6AMAAAToAwAANcrtDYAgDEXRVd4Axh0cpUKjxPIRWhS2l5j47yb3bArJ6QApXI6Rkl+t2+xkFJKCSqn5Zv9fXWAnQ4caRzxBBNzZNWMEwwSoLDQ+VFmbmGInd60vUEsBAh4DCgAAAAAAOY9hVgAAAAAAAAAAAAAAAAkAGAAAAAAAAAAQAO1BAAAAAGNvbW1hbmRzL1VUBQADfeb/Y3V4CwABBOgDAAAE6AMAAFBLAQIeAwoAAAAAAC2PYVZaEs63EwAAABMAAAAUABgAAAAAAAEAAACAgUMAAABjb21tYW5kcy9jb21tYW5kLnR4dFVUBQADZub/Y3V4CwABBOgDAAAE6AMAAFBLAQIeAxQAAAAIADGPYVacHAdWVAAAAGkAAAASABgAAAAAAAEAAACAgaQAAABjb21tYW5kcy9SRUFETUUubWRVVAUAA27m/2N1eAsAAQToAwAABOgDAABQSwUGAAAAAAMAAwABAQAARAEAAAAA
 ```
 Very clearly this is base64, so let's decode it.
@@ -90,7 +90,7 @@ data = open("commands.zip.b64", "r").read()
 open("commands.zip", "wb").write(base64.b64decode(data))
 ```
 
-```terminal
+```text
 $ unzip commands.zip
 Archive:  commands.zip
    creating: commands/
@@ -99,12 +99,12 @@ Archive:  commands.zip
 ```
 
 Opening up `command.txt`, we get:
-```
+```text
 echo 'Hello World!'
 ```
 
 And `README.md`:
-```
+```text
 As long as command.txt contains approved commands, the system will execute it and relay the results back.
 ```
 

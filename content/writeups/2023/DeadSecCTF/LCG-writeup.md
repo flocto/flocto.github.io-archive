@@ -11,11 +11,11 @@ Had a lot of fun playing DeadSecCTF this past weekend, here's a writeup for the 
 ## Description
 > Can you recover the message?
 >
-> [chall.py](#challpy)
-> [out.txt](#outtxt)
+> [chall.py](#chall.py)
+> [out.txt](#out.txt)
 
-### chall.py
-```python
+filename=chall.py
+```python 
 import random
 from Crypto.Util.number import *
 import gmpy2
@@ -64,8 +64,8 @@ print("Hint:")
 print([lcg.next() for _ in range(6)])
 ```
 
-### out.txt
-```
+filename=out.txt
+```text
 n: 21650447514664703683541519919331263390282460469744888634490387443119262785059244453207960009159682413880209329211270923006772751974531441721185385117102290236861537255410467283919771278372439649180599019262938453870697814603482585923290155250911013461308363715765472530666765831515068628482160014076801654521
 ct: 13119263762666966865889936515574328574427409372529276945448580211178603280310168998625170993340627371121987348265853339044876374353275949199559703791552498065356283102983556442205370872035849628351308403614183495058585452791359893308496622183117417598843112140605324797308265631765340150190302633479928043831
 Hint:
@@ -292,6 +292,7 @@ It creates a bunch of monomials from the original bivariate polynomial and uses 
 
 Anyway, the solve implementation is the same, just call the provided `coron` method with the correct parameters.
 
+filename=solve.py
 ```python
 X = 2^(int(p_low).bit_length()+1)
 Y = 2^(int(q_low).bit_length()+1)
@@ -311,6 +312,7 @@ print(p, q)
 ## Flag
 Finally, we have recovered $p$ and $q$. All we need to do now is calculate $d$ and decrypt the flag.
 
+filename=solve.py
 ```python
 from Crypto.Util.number import long_to_bytes
 phi = (p - 1) * (q - 1)
@@ -320,6 +322,7 @@ ct = 131192637626669668658899365155743285744274093725292769454485802111786032803
 m = int(pow(ct, d, N))
 print(long_to_bytes(m))
 ```
+filename=flag.txt
 ```
 b'Dead{7d19a88ab11151c222a8b}'
 ```

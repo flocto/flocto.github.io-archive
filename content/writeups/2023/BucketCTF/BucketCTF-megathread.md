@@ -49,7 +49,7 @@ A `.mcworld` file is just a zip file containing the files used to store all info
 
 Though `level.dat` technically contains the sign, I couldn't open it in NBTViewer for some reason, so we can't extract it that way. Thankfully, we're given a log file in `db/000003.log`. It should store the sign in plaintext, so we're good to go.
 
-```terminal
+```text
 $ strings db/000003.log | grep "bucket" -A 2 -B 2
 SignTextColor
 Text&
@@ -79,7 +79,7 @@ flag: `bucket{1L0V3MIN3CRAFT_1c330e9105f1}`
 >[https://storage.ebucket.dev/mrxbox98.png](https://storage.ebucket.dev/mrxbox98.png)
 
 Just strings.
-```terminal
+```text
 $ strings -n 10 mrxbox98.png
 bucket(m3t4d4t4_4c53f444)
 ```
@@ -116,7 +116,7 @@ for y in range(img.size[1]):
 
 print(msg.decode())
 ```
-```
+```text
 02:03:47: Alien Species 1: Greetings, unidentified spacecraft. This is the Andromedan Confederation. State your intentions.
 
 02:03:50: Alien Species 2: Hello, Andromedan Confederation. This is the Sagittarian Alliance. We come in peace and wish to establish communication with your species.
@@ -1206,7 +1206,7 @@ public static void main(String[] strArr) {
         System.out.println(Arrays.toString(f0I));
 ...
 ```
-```
+```text
 [Beware! I am **LUKE SMITH**! Creator of FOMO!, I will ask you a series of questions, and at the end if you answer them ALL correctly, you might get flag., If you would like you can skip a question by saying SKIP., SKIP, WRONG! LEAVE!, FLAG, 6a4343aa3cb4cfc411, How many points to reset valor rank?, What is the full name of the final boss in the last wish?, Who was the hunter vanguard before cayde-6?, What is the name of the city on neptune?, What grenade suppresses targets?, What perk used to be exclusive to vault of glass weapons, but now can roll on root of nightmares weapons?, Which weapon foundry is known for its liquid ammo?, Which color was the dead orbit faction most closely associated with?, How many times has banshee, the gunsmith, been reset?, What is the full name version of the EDZ?, During a weak curse week, where is petra venj located?, Where did saint-14 search when looking for osiris?, What is the name of cayde-6's ghost?, Which perk grants bonus damage when surrounded by enemies?, Which exotic weapon resembles a lever-action rifle?, Which weapon foundry tried bribing shaxx?, Who does xur work for?, How many oracles spawn during the 3rd round of oracles during a phase against Atheon?, Which clan completed the scourge of the past raid first?, Which ritual playlist is the drifter associated with?, Which seasonal event featured arbalest as its exotic weapon?, The icon of the extended barrel perk is the same as which shotgun perk?, What was the name of the nordic faction of the black armory?, Which augment allows players to interact with panels by shooting them in the deep stone crypt?, Which mod gives a fixed portion of health upon collecting an orb of power?, Which weapon stat increases the draw and stow speed of a weapon?, How many known ahamkara still live?]
 ```
 
@@ -1454,7 +1454,7 @@ public static void main(String[] strArr) {
 ```
 
 First, three strings are printed, which is just the introduction paragraph.
-```
+```text
 Beware! I am **LUKE SMITH**! Creator of FOMO!
 I will ask you a series of questions, and at the end if you answer them ALL correctly, you might get flag.
 If you would like you can skip a question by saying SKIP.
@@ -1469,7 +1469,7 @@ Since we have access to the full decompiled file, we can easily just print out t
 ```java
 System.out.println(answer);
 ```
-```
+```text
 6a4343aa3cb4cfc411
 ```
 Now all we have to do to construct this string is to keep skipping until we reach a question containing the next character, then calculate the proper integer to submit for that character.

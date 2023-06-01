@@ -539,7 +539,7 @@ for (int l = 0; l < maze.length; ++l) {
     System.out.println();
 }
 ```
-```terminal
+```text
 $ 213.133.103.186 31851
 I've learned from my mistakes and this time I will construct a full maze you will never be able to break out of!!!
                                          
@@ -677,7 +677,7 @@ public static void initMap() {
 ```
 
 Running the file locally, we can now see exactly what's going on:
-```terminal
+```text
 $ java Maze.java
 I've learned from my mistakes and this time I will construct a full maze you will never be able to break out of!!!
                                          
