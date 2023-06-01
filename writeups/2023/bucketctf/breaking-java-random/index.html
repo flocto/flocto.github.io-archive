@@ -1,4 +1,4 @@
-<!doctype html><html lang=en-us><head><title>Breaking Java Random - BucketCTF 2023 Writeup | flocto</title><meta charset=utf-8><meta name=viewport content="width=device-width,initial-scale=1"><meta name=generator content="Hugo 0.111.3"><link rel=canonical href=/writeups/2023/bucketctf/breaking-java-random/><link href=/sass/main.min.d5c6372979b097424e8b365d186ee2c4414af12738b1673ef13ae623846a4b06.css rel=stylesheet></head><body><div class=flexWrapper><header class=headerWrapper><div class=header><div><a href=/><span class=terminal>fl@cto ~ $</span></a></div><nav class=headerLinks><ul><li><a href=/about title>~/about</a></li><li><a href=/projects title>~/projects</a></li><li><a href=/writeups title>~/writeups</a></li><li><a href=/blog title>~/blog</a></li><li><a href=/ style=align-items:center;justify-content:center><img style=width:30px;height:30px;border-radius:15px;vertical-align:text-bottom src=/profile.png alt=Home></a></li></ul></nav></div></header><div class=content><main class=main><div class=postWrapper><h1>Breaking Java Random - BucketCTF 2023 Writeup</h1><ul class=tagList><li class=tagItem><a class=tagLink href=/tags/rev/>rev</a></li><li class=tagItem><a class=tagLink href=/tags/bucketctf/>bucketctf</a></li><li class=tagItem><a class=tagLink href=/tags/2023/>2023</a></li></ul><div><p>The promised reverse engineering writeup is finally here. This post will feature 3 challenges: <code>random security</code>, <code>maze</code>, and <code>image</code>.
+<!doctype html><html lang=en-us><head><title>Breaking Java Random - BucketCTF 2023 Writeup | flocto</title><meta charset=utf-8><meta name=viewport content="width=device-width,initial-scale=1"><meta name=generator content="Hugo 0.112.5"><link rel=canonical href=/writeups/2023/bucketctf/breaking-java-random/><link href=/sass/main.min.ee87bb0877b054af28c39176a794e35ad28c182cbc28b05dbd61c904f604afd1.css rel=stylesheet></head><body><div class=flexWrapper><header class=headerWrapper><div class=header><div><a href=/><span class=terminal>fl@cto ~ $</span></a></div><nav class=headerLinks><ul><li><a href=/about title>~/about</a></li><li><a href=/projects title>~/projects</a></li><li><a href=/writeups title>~/writeups</a></li><li><a href=/blog title>~/blog</a></li><li><a href=/ style=align-items:center;justify-content:center><img style=width:30px;height:30px;border-radius:15px;vertical-align:text-bottom src=/profile.png alt=Home></a></li></ul></nav></div></header><div class=content><main class=main><div class=postWrapper><h1>Breaking Java Random - BucketCTF 2023 Writeup</h1><ul class=tagList><li class=tagItem><a class=tagLink href=/tags/rev/>rev</a></li><li class=tagItem><a class=tagLink href=/tags/bucketctf/>bucketctf</a></li><li class=tagItem><a class=tagLink href=/tags/2023/>2023</a></li></ul><div><p>The promised reverse engineering writeup is finally here. This post will feature 3 challenges: <code>random security</code>, <code>maze</code>, and <code>image</code>.
 While <code>image</code> is categorized as <code>crypto</code>, I feel like that&rsquo;s a gross misrepresentation of the challenge, so I&rsquo;m putting all 3 as rev.</p><p>Let&rsquo;s start out with the most basic challenge: <code>random security</code>.</p><h2 id=random-security---452---medium>Random Security - 452 - Medium</h2><blockquote><p>One of my <em>friends</em> recently learned <strong>Java</strong> and started teasing all of us for not knowing anything about programming. He made what he called a <em>secure</em> program and challenged us to steal some flag from it. I have no idea where to even start, could you help out?</p></blockquote><p>We&rsquo;re not given any source, so let&rsquo;s just connect to the server and see what we get.</p><pre tabindex=0><code class=language-terminal data-lang=terminal>$ nc 213.133.103.186 32811
 Since I am nice I will give you a random number:
 0.1406976754934386
@@ -436,50 +436,50 @@ ZSC
 </span></span><span style=display:flex><span>    <span style=color:#f92672>}</span>
 </span></span><span style=display:flex><span>    System<span style=color:#f92672>.</span><span style=color:#a6e22e>out</span><span style=color:#f92672>.</span><span style=color:#a6e22e>println</span><span style=color:#f92672>();</span>
 </span></span><span style=display:flex><span><span style=color:#f92672>}</span>
-</span></span></code></pre></div><pre tabindex=0><code class=language-terminal data-lang=terminal>$ 213.133.103.186 31851
-I&#39;ve learned from my mistakes and this time I will construct a full maze you will never be able to break out of!!!
-                                         
- ####################################### 
- #                                     # 
- # ################################### # 
- # #                                 # # 
- # # ############################### # # 
- # # #                             # # # 
- # # # ########################### # # # 
- # # # #                         # # # # 
- # # # # ####################### # # # # 
- # # # # #                     # # # # # 
- # # # # # ################### # # # # # 
- # # # # # #                 # # # # # # 
- # # # # # # ############### # # # # # # 
- # # # # # # #             # # # # # # # 
- # # # # # # # ########### # # # # # # # 
- # # # # # # # #         # # # # # # # # 
- # # # # # # # # ####### # # # # # # # # 
- # # # # # # # # #     # # # # # # # # # 
- # # # # # # # # # ### # # # # # # # # # 
- # # # # # # # # # # # # # # # # # # # # 
- # # # # # # # # # ### # # # # # # # # # 
- # # # # # # # # #     # # # # # # # # # 
- # # # # # # # # ####### # # # # # # # # 
- # # # # # # # #         # # # # # # # # 
- # # # # # # # ########### # # # # # # # 
- # # # # # # #             # # # # # # # 
- # # # # # # ############### # # # # # # 
- # # # # # #                 # # # # # # 
- # # # # # ################### # # # # # 
- # # # # #                     # # # # # 
- # # # # ####################### # # # # 
- # # # #                         # # # # 
- # # # ########################### # # # 
- # # #                             # # # 
- # # ############################### # # 
- # #                                 # # 
- # ################################### # 
- #                                     # 
- ####################################### 
-                                         
-</code></pre><p>Note the extra wrapper of spaces on all 4 sides of the grid. That should be the area we are trying to reach, as any outward movement in that wrapper should move us out of bounds and throw the necessary error needed to get the flag.</p><p>But how do we get out of these concentric walls?</p><p>Well, there&rsquo;s one last part to the challenge. Remember how we&rsquo;re given <code>random.nextDouble</code> outputs? This is where that finally comes into play.</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-java data-lang=java><span style=display:flex><span><span style=color:#66d9ef>for</span> <span style=color:#f92672>(</span><span style=color:#66d9ef>int</span> n2 <span style=color:#f92672>=</span> <span style=color:#ae81ff>0</span><span style=color:#f92672>;</span> n2 <span style=color:#f92672>&lt;</span> <span style=color:#ae81ff>10</span><span style=color:#f92672>;</span> <span style=color:#f92672>++</span>n2<span style=color:#f92672>)</span> <span style=color:#f92672>{</span>
+</span></span></code></pre></div><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-text data-lang=text><span style=display:flex><span>$ 213.133.103.186 31851
+</span></span><span style=display:flex><span>I&#39;ve learned from my mistakes and this time I will construct a full maze you will never be able to break out of!!!
+</span></span><span style=display:flex><span>                                         
+</span></span><span style=display:flex><span> ####################################### 
+</span></span><span style=display:flex><span> #                                     # 
+</span></span><span style=display:flex><span> # ################################### # 
+</span></span><span style=display:flex><span> # #                                 # # 
+</span></span><span style=display:flex><span> # # ############################### # # 
+</span></span><span style=display:flex><span> # # #                             # # # 
+</span></span><span style=display:flex><span> # # # ########################### # # # 
+</span></span><span style=display:flex><span> # # # #                         # # # # 
+</span></span><span style=display:flex><span> # # # # ####################### # # # # 
+</span></span><span style=display:flex><span> # # # # #                     # # # # # 
+</span></span><span style=display:flex><span> # # # # # ################### # # # # # 
+</span></span><span style=display:flex><span> # # # # # #                 # # # # # # 
+</span></span><span style=display:flex><span> # # # # # # ############### # # # # # # 
+</span></span><span style=display:flex><span> # # # # # # #             # # # # # # # 
+</span></span><span style=display:flex><span> # # # # # # # ########### # # # # # # # 
+</span></span><span style=display:flex><span> # # # # # # # #         # # # # # # # # 
+</span></span><span style=display:flex><span> # # # # # # # # ####### # # # # # # # # 
+</span></span><span style=display:flex><span> # # # # # # # # #     # # # # # # # # # 
+</span></span><span style=display:flex><span> # # # # # # # # # ### # # # # # # # # # 
+</span></span><span style=display:flex><span> # # # # # # # # # # # # # # # # # # # # 
+</span></span><span style=display:flex><span> # # # # # # # # # ### # # # # # # # # # 
+</span></span><span style=display:flex><span> # # # # # # # # #     # # # # # # # # # 
+</span></span><span style=display:flex><span> # # # # # # # # ####### # # # # # # # # 
+</span></span><span style=display:flex><span> # # # # # # # #         # # # # # # # # 
+</span></span><span style=display:flex><span> # # # # # # # ########### # # # # # # # 
+</span></span><span style=display:flex><span> # # # # # # #             # # # # # # # 
+</span></span><span style=display:flex><span> # # # # # # ############### # # # # # # 
+</span></span><span style=display:flex><span> # # # # # #                 # # # # # # 
+</span></span><span style=display:flex><span> # # # # # ################### # # # # # 
+</span></span><span style=display:flex><span> # # # # #                     # # # # # 
+</span></span><span style=display:flex><span> # # # # ####################### # # # # 
+</span></span><span style=display:flex><span> # # # #                         # # # # 
+</span></span><span style=display:flex><span> # # # ########################### # # # 
+</span></span><span style=display:flex><span> # # #                             # # # 
+</span></span><span style=display:flex><span> # # ############################### # # 
+</span></span><span style=display:flex><span> # #                                 # # 
+</span></span><span style=display:flex><span> # ################################### # 
+</span></span><span style=display:flex><span> #                                     # 
+</span></span><span style=display:flex><span> ####################################### 
+</span></span><span style=display:flex><span>                                         
+</span></span></code></pre></div><p>Note the extra wrapper of spaces on all 4 sides of the grid. That should be the area we are trying to reach, as any outward movement in that wrapper should move us out of bounds and throw the necessary error needed to get the flag.</p><p>But how do we get out of these concentric walls?</p><p>Well, there&rsquo;s one last part to the challenge. Remember how we&rsquo;re given <code>random.nextDouble</code> outputs? This is where that finally comes into play.</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-java data-lang=java><span style=display:flex><span><span style=color:#66d9ef>for</span> <span style=color:#f92672>(</span><span style=color:#66d9ef>int</span> n2 <span style=color:#f92672>=</span> <span style=color:#ae81ff>0</span><span style=color:#f92672>;</span> n2 <span style=color:#f92672>&lt;</span> <span style=color:#ae81ff>10</span><span style=color:#f92672>;</span> <span style=color:#f92672>++</span>n2<span style=color:#f92672>)</span> <span style=color:#f92672>{</span>
 </span></span><span style=display:flex><span>    <span style=color:#66d9ef>final</span> <span style=color:#66d9ef>int</span> bound <span style=color:#f92672>=</span> <span style=color:#ae81ff>3</span> <span style=color:#f92672>+</span> n2 <span style=color:#f92672>*</span> <span style=color:#ae81ff>4</span><span style=color:#f92672>;</span>
 </span></span><span style=display:flex><span>    <span style=color:#66d9ef>final</span> <span style=color:#66d9ef>int</span> nextInt <span style=color:#f92672>=</span> random<span style=color:#f92672>.</span><span style=color:#a6e22e>nextInt</span><span style=color:#f92672>(</span>bound<span style=color:#f92672>);</span>
 </span></span><span style=display:flex><span>    <span style=color:#66d9ef>switch</span> <span style=color:#f92672>(</span>random<span style=color:#f92672>.</span><span style=color:#a6e22e>nextInt</span><span style=color:#f92672>(</span><span style=color:#ae81ff>4</span><span style=color:#f92672>))</span> <span style=color:#f92672>{</span>
@@ -553,50 +553,50 @@ I&#39;ve learned from my mistakes and this time I will construct a full maze you
 </span></span><span style=display:flex><span>        System<span style=color:#f92672>.</span><span style=color:#a6e22e>out</span><span style=color:#f92672>.</span><span style=color:#a6e22e>println</span><span style=color:#f92672>();</span>
 </span></span><span style=display:flex><span>    <span style=color:#f92672>}</span>
 </span></span><span style=display:flex><span><span style=color:#f92672>}</span>
-</span></span></code></pre></div><p>Running the file locally, we can now see exactly what&rsquo;s going on:</p><pre tabindex=0><code class=language-terminal data-lang=terminal>$ java Maze.java
-I&#39;ve learned from my mistakes and this time I will construct a full maze you will never be able to break out of!!!
-                                         
- ####################################### 
- #                                     # 
- # ################################### # 
- # #                                 # # 
- # # ############################### # # 
- # # #                             # # # 
- # # # ########################### # # # 
- # # # #                         # # # # 
- # # # # ####################### # # # # 
- # # # # #                     # # # # # 
- #   # # # ##### ############# # # # # # 
- # # # # # #                 # # # # # # 
- # # # # # #  ############## # # # # # # 
- # # # # # # #             # # # # # # # 
- # # # # # # # ## ######## # # # # # # # 
- # # # # # # # #         # # # # # # # # 
- # # # # # # # # ####### # # # # # # # # 
- # # # # # # # # #     # # # # # # # # # 
- # # # # # # # # # ### # # # # # # # # # 
- # # # # # # # # # #X# # # # # # # # # # 
- # # # # # # # # # # # # # # # # # # # # 
- # # # # # # # # #     # # # # # # # # # 
- # # # # # # # # # ##### # # # # # # # # 
- # # # # # # # #         # # # # # # # # 
- # # # # # # # ########### # # # # # # # 
- # # # # # # #             # # # # # # # 
- # # # # # # ############### # # # # # # 
- # # # # # #                 # # # # # # 
- # # # # # ################### # # # # # 
- # # # # #                     # # # # # 
- # # # # ####### ############### # # # # 
- # # # #                         # # # # 
- # # # ################## ######## # # # 
- # # #                             # # # 
- # # ############ ################## # # 
- # #                                 # # 
- # ################################### # 
- #                                     # 
- ########## ############################ 
-                                         
-</code></pre><p>This loop actually randomly generates holes into the walls! This means we can actually escape the maze once we&rsquo;re able to recover where the holes are.</p><p>Because the maze is only printed once at the beginning without the holes, we need to completely recover these holes through their random generation, and then move through each hole completely blind.</p><p>But there&rsquo;s just one problem: we can recover the random seed from the <code>nextDouble</code>, but how do we loop backwards to get the previously generated <code>nextInt</code>s?</p><h3 id=lcgs-go-both-ways>LCGs go both ways</h3><p>Remember how the RNG for <code>java.util.Random</code> is defined? It&rsquo;s a <a href=https://en.wikipedia.org/wiki/Linear_congruential_generator>linear congruential generator</a> in this form:</p><p>$$
+</span></span></code></pre></div><p>Running the file locally, we can now see exactly what&rsquo;s going on:</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-text data-lang=text><span style=display:flex><span>$ java Maze.java
+</span></span><span style=display:flex><span>I&#39;ve learned from my mistakes and this time I will construct a full maze you will never be able to break out of!!!
+</span></span><span style=display:flex><span>                                         
+</span></span><span style=display:flex><span> ####################################### 
+</span></span><span style=display:flex><span> #                                     # 
+</span></span><span style=display:flex><span> # ################################### # 
+</span></span><span style=display:flex><span> # #                                 # # 
+</span></span><span style=display:flex><span> # # ############################### # # 
+</span></span><span style=display:flex><span> # # #                             # # # 
+</span></span><span style=display:flex><span> # # # ########################### # # # 
+</span></span><span style=display:flex><span> # # # #                         # # # # 
+</span></span><span style=display:flex><span> # # # # ####################### # # # # 
+</span></span><span style=display:flex><span> # # # # #                     # # # # # 
+</span></span><span style=display:flex><span> #   # # # ##### ############# # # # # # 
+</span></span><span style=display:flex><span> # # # # # #                 # # # # # # 
+</span></span><span style=display:flex><span> # # # # # #  ############## # # # # # # 
+</span></span><span style=display:flex><span> # # # # # # #             # # # # # # # 
+</span></span><span style=display:flex><span> # # # # # # # ## ######## # # # # # # # 
+</span></span><span style=display:flex><span> # # # # # # # #         # # # # # # # # 
+</span></span><span style=display:flex><span> # # # # # # # # ####### # # # # # # # # 
+</span></span><span style=display:flex><span> # # # # # # # # #     # # # # # # # # # 
+</span></span><span style=display:flex><span> # # # # # # # # # ### # # # # # # # # # 
+</span></span><span style=display:flex><span> # # # # # # # # # #X# # # # # # # # # # 
+</span></span><span style=display:flex><span> # # # # # # # # # # # # # # # # # # # # 
+</span></span><span style=display:flex><span> # # # # # # # # #     # # # # # # # # # 
+</span></span><span style=display:flex><span> # # # # # # # # # ##### # # # # # # # # 
+</span></span><span style=display:flex><span> # # # # # # # #         # # # # # # # # 
+</span></span><span style=display:flex><span> # # # # # # # ########### # # # # # # # 
+</span></span><span style=display:flex><span> # # # # # # #             # # # # # # # 
+</span></span><span style=display:flex><span> # # # # # # ############### # # # # # # 
+</span></span><span style=display:flex><span> # # # # # #                 # # # # # # 
+</span></span><span style=display:flex><span> # # # # # ################### # # # # # 
+</span></span><span style=display:flex><span> # # # # #                     # # # # # 
+</span></span><span style=display:flex><span> # # # # ####### ############### # # # # 
+</span></span><span style=display:flex><span> # # # #                         # # # # 
+</span></span><span style=display:flex><span> # # # ################## ######## # # # 
+</span></span><span style=display:flex><span> # # #                             # # # 
+</span></span><span style=display:flex><span> # # ############ ################## # # 
+</span></span><span style=display:flex><span> # #                                 # # 
+</span></span><span style=display:flex><span> # ################################### # 
+</span></span><span style=display:flex><span> #                                     # 
+</span></span><span style=display:flex><span> ########## ############################ 
+</span></span><span style=display:flex><span>                                         
+</span></span></code></pre></div><p>This loop actually randomly generates holes into the walls! This means we can actually escape the maze once we&rsquo;re able to recover where the holes are.</p><p>Because the maze is only printed once at the beginning without the holes, we need to completely recover these holes through their random generation, and then move through each hole completely blind.</p><p>But there&rsquo;s just one problem: we can recover the random seed from the <code>nextDouble</code>, but how do we loop backwards to get the previously generated <code>nextInt</code>s?</p><h3 id=lcgs-go-both-ways>LCGs go both ways</h3><p>Remember how the RNG for <code>java.util.Random</code> is defined? It&rsquo;s a <a href=https://en.wikipedia.org/wiki/Linear_congruential_generator>linear congruential generator</a> in this form:</p><p>$$
 \begin{aligned}
 &amp;m = \text{0x5DEECE66D}& \\
 &amp;b = \text{0xB}& \\
@@ -968,7 +968,8 @@ Here is a random number for you since i&#39;m nice: 0.7168512222588633
 *pass into script*
 Q Z S Z Z C D D D D D D C C E W W W W W W W E E W W W Q A A A A A A A A A A A Q Q A A A Z S S S S S S S S S S S S S S S S S S C D D D D D D D D D D D D D C C D D D D D E W W W W E C S S S S S S Z A A A A A A A A A A Z C D D D D D D D D D D D D E W W W W W W W W W W W W W W W W W W E E W W W W W W W W W W W W Q A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A Z S S S S S S S S S S S Z Q Q
 bucket{r4nd0m_n3v3r_w0rk5_e92fc72d}
-</code></pre><p><em>image writeup soon i swear</em></p></div></div></main></div><footer class=footer>© 2023 flocto, Built with
+</code></pre><p><em>image writeup soon i swear</em></p></div></div></main></div><script>function handle_open(e){s,e.target.classList.toggle("open"),e.target.classList.contains("open")?e.target.textContent="Click to collapse "+e.target.textContent.split(" ").slice(3).join(" "):e.target.textContent="Click to expand "+e.target.textContent.split(" ").slice(3).join(" ")}let code_divs=document.querySelectorAll("div.highlight"),to_remove=[];for(let e of code_divs){let t="",n=e.previousElementSibling;n.tagName=="P"&&(n=n.textContent,n.startsWith("filename")&&(t=n.split("=")[1].trim(),to_remove.push(e.previousElementSibling)));let s=e.querySelector("pre code"),o=s.textContent.split(`
+`).length;if(t!==""||o>10){console.log(e);let n=document.createElement("details"),i=document.createElement("summary"),o=document.createElement("span");o.textContent="Click to expand",t!==""&&(o.textContent+=" "+t,n.setAttribute("id",t)),o.classList.add("code-summary-inner"),o.addEventListener("click",handle_open),i.appendChild(o),i.classList.add("code-summary"),s.classList.add("code-inner"),e.parentNode.insertBefore(n,e),n.appendChild(i),n.appendChild(e),n.classList.add("code-wrapper")}}for(let e of to_remove)e.remove()</script><footer class=footer>© 2023 flocto, Built with
 <a href=https://gohugo.io class=footerLink>Hugo</a> and (an edited)
 <a href=https://github.com/LordMathis/hugo-theme-nightfall class=footerLink>Nightfall</a> theme</footer><script>MathJax={tex:{inlineMath:[["$","$"],["\\(","\\)"]],displayMath:[["$$","$$"],["\\[","\\]"]],processEscapes:!0,processEnvironments:!0},options:{skipHtmlTags:["script","noscript","style","textarea","pre"]}},window.addEventListener("load",e=>{document.querySelectorAll("mjx-container").forEach(function(e){e.parentElement.classList+="has-jax"})})</script><script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
 <script type=text/javascript id=MathJax-script async src=https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js></script></div></body></html>
