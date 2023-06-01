@@ -24,11 +24,15 @@
 
         <script>
             function handle_open(e) {
-                e.target.classList.toggle("open");
-                if (e.target.classList.contains("open")) {
-                    e.target.textContent = "Click to collapse " + e.target.textContent.split(" ").slice(3).join(" ");
+                let target = e.target;
+                if (e.target.tagName === "SUMMARY") {
+                    target = e.target.querySelector(".code-summary-inner");
+                }
+                target.classList.toggle("open");
+                if (target.classList.contains("open")) {
+                    target.textContent = "Click to collapse " + target.textContent.split(" ").slice(3).join(" ");
                 } else {
-                    e.target.textContent = "Click to expand " + e.target.textContent.split(" ").slice(3).join(" ");
+                    target.textContent = "Click to expand " + target.textContent.split(" ").slice(3).join(" ");
                 }
             }
 
@@ -50,6 +54,7 @@
 
                 if (filename !== "" || lines > 10) {
 
+                    // console.log(div);
                     let wrapper = document.createElement("details");
                     let summary = document.createElement("summary");
                     let summary_inner = document.createElement("span");
@@ -60,9 +65,9 @@
                         wrapper.setAttribute("id", filename);
                     }
                     summary_inner.classList.add("code-summary-inner");
-                    summary_inner.addEventListener("click", handle_open);
 
                     summary.appendChild(summary_inner);
+                    summary.addEventListener("click", handle_open);
                     summary.classList.add("code-summary");
 
                     code.classList.add("code-inner");
