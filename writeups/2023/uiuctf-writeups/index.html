@@ -1,0 +1,476 @@
+<!doctype html><html lang=en-us><head><title>UIUCTF 2023 Writeups | flocto</title><meta charset=utf-8><meta name=viewport content="width=device-width,initial-scale=1"><meta name=generator content="Hugo 0.115.0"><link rel=canonical href=/writeups/2023/uiuctf-writeups/><link href=/sass/main.min.39ece682d01021effadbf2d7ce0f71f0aec2ff50bfab20c565a139b86b029979.css rel=stylesheet></head><body><div class=flexWrapper><header class=headerWrapper><div class=header><div><a href=/><span class=terminal>fl@cto ~ $</span></a></div><nav class=headerLinks><ul><li><a href=/about title>~/about</a></li><li><a href=/projects title>~/projects</a></li><li><a href=/writeups title>~/writeups</a></li><li><a href=/blog title>~/blog</a></li><li><a href=/ style=align-items:center;justify-content:center><img style=width:30px;height:30px;border-radius:15px;vertical-align:text-bottom src=/profile.png alt=Home></a></li></ul></nav></div></header><div class=content><main class=main><div class=postWrapper><h1>UIUCTF 2023 Writeups</h1><ul class=tagList><li class=tagItem><a class=tagLink href=/tags/2023/>2023</a></li><li class=tagItem><a class=tagLink href=/tags/misc/>misc</a></li><li class=tagItem><a class=tagLink href=/tags/rev/>rev</a></li><li class=tagItem><a class=tagLink href=/tags/uiuctf/>uiuctf</a></li></ul><div><p>Once again another banger CTF from SigPwny, including a cool theme that I completely avoided to solve challenges faster. 😂😂😂 <del><em>(jk the theme was actually cool tho)</em></del></p><p>Anyway, I ended up solving quite a few challenges in misc/rev, so here&rsquo;s writeups for both vimjails, <a href=#geoguessr->geoguessr</a>, <a href=#pwnykey>pwnykey</a>, and [Schrodinger&rsquo;s Cat](not done).</p><h1 id=vimjail-1-and-15>Vimjail 1 (and 1.5)</h1><p>BTW, as a disclaimer, these vimjail writeups cover a solution that solves both the original and the .5 updated version, and does not cover the cheese that was patched.</p><p>Anyway, starting with Vimjail 1, we&rsquo;re given this setup.</p><p>filename=vimrc</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-text data-lang=text><span style=display:flex><span>set nocompatible
+</span></span><span style=display:flex><span>set insertmode
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>inoremap &lt;c-o&gt; nope
+</span></span><span style=display:flex><span>inoremap &lt;c-l&gt; nope
+</span></span><span style=display:flex><span>inoremap &lt;c-z&gt; nope
+</span></span><span style=display:flex><span>inoremap &lt;c-\&gt;&lt;c-n&gt; nope
+</span></span></code></pre></div><p>filename=entry.sh</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-text data-lang=text><span style=display:flex><span>#!/usr/bin/env sh
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>vim -R -M -Z -u /home/user/vimrc
+</span></span></code></pre></div><p>and our goal is to somehow read <code>/flag.txt</code>, as expected of a jail.</p><p>Connecting to remote (<code>socat file:$(tty),raw,echo=0 tcp:vimjail1.chal.uiuc.tf:1337</code>), we&rsquo;re greeted with an empty vim buffer, stuck in insert mode.</p><p>The usual escapes <code>&lt;c-[></code> (<code>&lt;c-</code> standing for <code>Ctrl+</code>) and <code>Esc</code> don&rsquo;t work, and neither do any of the mapped out keybinds in the vimrc. We also can&rsquo;t modify the buffer, since we launched with <code>-M</code>.</p><p>After messing around a bit with random keybinds, we find that both <code>&lt;c-x></code> and <code>&lt;c-r></code> are allowed. <code>&lt;c-x></code>, completion mode, doesn&rsquo;t seem to lead anywhere interesting though, since again, the buffer is unmodifiable.</p><p>But interestingly, <code>&lt;c-r></code>, the registers, does actually give us something useful. The normal registers don&rsquo;t do anything, but we do have access to <code>=</code>, the expression register.</p><p>The expression register allows us to input expression and it will spit out the result of the expression. For example, in normal Vim, typing <code>2+2</code> into the expression register would put <code>4</code> into the buffer.</p><p>What the expression register is actually doing is treating our input as <code>vimscript</code>, then executing it internally and returning the result. This means we basically have free <code>vimscript</code> execution, so running <code>system</code> should work right?</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-text data-lang=text><span style=display:flex><span>=system(&#34;ls&#34;)
+</span></span><span style=display:flex><span>E145: Shell commands and some functionality not allowed in rvim
+</span></span></code></pre></div><p>Oh right&mldr; we also launched with <code>-Z</code></p><p>Thankfully, theres <a href=https://vimhelp.org/usr_41.txt.html#41.6>a lot of other functions</a> we can use that don&rsquo;t trigger rvim&rsquo;s limitations.</p><p>We can use <code>readfile("/flag.txt")</code> to get the flag, except we don&rsquo;t have any way to see the actual result since it can&rsquo;t get pasted into the buffer. Instead, all we need to do is get an error message to pop up with the result of the <code>readfile</code>. There&rsquo;s a lot of ways to do this, but I ended up just using <code>eval</code>.</p><p>(also <code>readfile</code> returns a list but obviously the flag will just be in the first line so we just use <code>[0]</code>)</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-text data-lang=text><span style=display:flex><span>=eval(readfile(&#34;/flag.txt&#34;)[0])
+</span></span><span style=display:flex><span>E121: Undefined variable: n0_3sc4p3_f0r_y0u_8613a322d0eb0628
+</span></span><span style=display:flex><span>Press ENTER or type command to continue
+</span></span><span style=display:flex><span>E15: Invalid expression: &#34;uiuctf{n0_3sc4p3_f0r_y0u_8613a322d0eb0628}&#34;
+</span></span><span style=display:flex><span>Press ENTER or type command to continue
+</span></span></code></pre></div><p>This also works for vimjail 1.5.</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-text data-lang=text><span style=display:flex><span>=eval(readfile(&#34;/flag.txt&#34;)[0])
+</span></span><span style=display:flex><span>E121: Undefined variable: ctr1_r_1s_h4ndy_277d0fde079f49d2
+</span></span><span style=display:flex><span>Press ENTER or type command to continue
+</span></span><span style=display:flex><span>E15: Invalid expression: &#34;uiuctf{ctr1_r_1s_h4ndy_277d0fde079f49d2}&#34;
+</span></span><span style=display:flex><span>Press ENTER or type command to continue
+</span></span></code></pre></div><h1 id=vimjail-2-and-25>Vimjail 2 (and 2.5</h1><p>This time theres a bit more limitations. In addition to the previously banned keybinds, all of the following are replaced with <code>_</code>.</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-text data-lang=text><span style=display:flex><span>abcdefghijklmnoprstuvwxyz!@#$%^&amp;*-+=`~{}[]|\;&lt;&gt;,./?
+</span></span></code></pre></div><p>We can still access registers thankfully, but it seems we can&rsquo;t execute anything useful since all the built-in functions only use lowercase letters.</p><p>Except, given that <code>q</code> isn&rsquo;t banned, there&rsquo;s another trick we haven&rsquo;t used yet, <a href=https://learnbyexample.github.io/vim_reference/Insert-mode.html#insert-special-characters>inserting literal characters.</a></p><p>If we press <code>&lt;c-q></code> (<code>&lt;c-v</code> is bound to paste) while inside the expression register, we can then type a letter like <code>a</code>.
+Since we&rsquo;re inserting a character, the vimrc replacement doesn&rsquo;t apply, the <code>^a</code> gets evaluated as <code>a</code>, and we just got <code>a</code> into the expression register!</p><pre tabindex=0><code>(in expression register)
+= 
+(press &lt;c-q&gt;)
+=^
+(press a)
+=^a
+=a
+</code></pre><p>Unfortunately, trying to type out our entire payload like before doesn&rsquo;t work. Since <code>^x</code> doesn&rsquo;t evaluate to <code>x</code>, we can&rsquo;t type <code>/flag.txt</code>.</p><p>Thankfully, there&rsquo;s a built-in function <code>glob</code>, that can autocomplete file paths, so we can just call <code>glob("/flag.t*t")</code> to return <code>"/flag.txt"</code>.</p><p>You might think <code>glob</code> won&rsquo;t work either, since <code>^o</code> doesn&rsquo;t work, but we can actually just autocomplete <code>gl</code> to <code>glob</code> with <code>&lt;c-l></code> since it&rsquo;s a built-in function name.</p><p>So our final payload, and the flag, looks like this:</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-text data-lang=text><span style=display:flex><span>=eval(readfile(glob(&#34;/flag.t*t&#34;))[0])
+</span></span><span style=display:flex><span>E15: Invalid expression: &#34;&lt;left&gt;&lt;left&gt;&lt;left&gt;&lt;left&gt;_c364201e0d86171b&#34;
+</span></span><span style=display:flex><span>Press ENTER or type command to continue
+</span></span><span style=display:flex><span>E15: Invalid expression: &#34;uiuctf{&lt;left&gt;&lt;left&gt;&lt;left&gt;&lt;left&gt;_c364201e0d86171b}&#34;
+</span></span><span style=display:flex><span>Press ENTER or type command to continue
+</span></span></code></pre></div><p>vimjail 2.5:</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-text data-lang=text><span style=display:flex><span>=eval(readfile(glob(&#34;/flag.t*t&#34;))[0])
+</span></span><span style=display:flex><span>E488: Trailing characters: _kn0w_h0w_7o_ex1t_v1m_7661892ec70e3550
+</span></span><span style=display:flex><span>Press ENTER or type command to continue
+</span></span><span style=display:flex><span>E15: Invalid expression: &#34;uiuctf{1_kn0w_h0w_7o_ex1t_v1m_7661892ec70e3550}&#34;
+</span></span><span style=display:flex><span>Press ENTER or type command to continue
+</span></span></code></pre></div><h1 id=geoguessr->Geoguessr 🧀⚠️🧀⚠️🧀</h1><p>⚠️ This writeup contains a whole bunch of 🧀🧀🧀 ⚠️</p><p>We&rsquo;re given two files, <code>janet</code> and <code>program.jimage</code>. Running as instructed, we&rsquo;re faced with a small game that seems impossible:</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-text data-lang=text><span style=display:flex><span>$ ./janet -i program.jimage
+</span></span><span style=display:flex><span>Welcome to geoguesser!
+</span></span><span style=display:flex><span>Where am I? 1,1
+</span></span><span style=display:flex><span>Nope. You have 4 guesses left.
+</span></span><span style=display:flex><span>Where am I? 2,2
+</span></span><span style=display:flex><span>Nope. You have 3 guesses left.
+</span></span><span style=display:flex><span>Where am I? 3,3
+</span></span><span style=display:flex><span>Nope. You have 2 guesses left.
+</span></span><span style=display:flex><span>Where am I? 4,4
+</span></span><span style=display:flex><span>Nope. You have 1 guesses left.
+</span></span><span style=display:flex><span>Where am I? 5,5
+</span></span><span style=display:flex><span>You lose!
+</span></span><span style=display:flex><span>The answer was: &lt;tuple 0x55BD3C9A5BC0&gt;
+</span></span></code></pre></div><p>Now, looking up online, we can see that <a href=https://janet-lang.org/>janet</a> is a small functional programming language that can compile to <code>jimage</code> files. However, in it&rsquo;s compilation process, it actually keeps all strings and function names inside the original source code.</p><p>With a small dump we can see:</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-text data-lang=text><span style=display:flex><span>$ strings program.jimage
+</span></span><span style=display:flex><span>root-env
+</span></span><span style=display:flex><span>parse-coord
+</span></span><span style=display:flex><span>source-map
+</span></span><span style=display:flex><span>main.janet
+</span></span><span style=display:flex><span>value
+</span></span><span style=display:flex><span>parse-coord
+</span></span><span style=display:flex><span>main
+</span></span><span style=display:flex><span>float
+</span></span><span style=display:flex><span>number
+</span></span><span style=display:flex><span>some
+</span></span><span style=display:flex><span>        peg/match
+</span></span><span style=display:flex><span>_000031
+</span></span><span style=display:flex><span>_000032,
+</span></span><span style=display:flex><span>(parse-coord s)
+</span></span><span style=display:flex><span>random-float
+</span></span><span style=display:flex><span>random-float
+</span></span><span style=display:flex><span>math/rng-uniform
+</span></span><span style=display:flex><span>(random-float min max)
+</span></span><span style=display:flex><span>main
+</span></span><span style=display:flex><span>main
+</span></span><span style=display:flex><span>Welcome to geoguesser!
+</span></span><span style=display:flex><span>print
+</span></span><span style=display:flex><span>init-rng
+</span></span><span style=display:flex><span>os/time
+</span></span><span style=display:flex><span>math/rng
+</span></span><span style=display:flex><span>init-rng,
+</span></span><span style=display:flex><span>guessing-game
+</span></span><span style=display:flex><span>        get-guess
+</span></span><span style=display:flex><span>Where am I?
+</span></span><span style=display:flex><span>prin
+</span></span><span style=display:flex><span>stdin
+</span></span><span style=display:flex><span>line
+</span></span><span style=display:flex><span>        file/read
+</span></span><span style=display:flex><span>&#34;Not a valid coordinate. Try again.
+</span></span><span style=display:flex><span>        get-guess
+</span></span><span style=display:flex><span>_000033
+</span></span><span style=display:flex><span>input-line
+</span></span><span style=display:flex><span>_00003w
+</span></span><span style=display:flex><span>num,
+</span></span><span style=display:flex><span>compare-coord
+</span></span><span style=display:flex><span>compare-float
+</span></span><span style=display:flex><span>math/abs
+</span></span><span style=display:flex><span>        tolerance
+</span></span><span style=display:flex><span>compare-float,
+</span></span><span style=display:flex><span>compare-coord
+</span></span><span style=display:flex><span>_00003P,
+</span></span><span style=display:flex><span>Nope. You have
+</span></span><span style=display:flex><span> guesses left.
+</span></span><span style=display:flex><span>answer
+</span></span><span style=display:flex><span>guessing-game
+</span></span><span style=display:flex><span>guess
+</span></span><span style=display:flex><span>        remaining
+</span></span><span style=display:flex><span>_00004I,
+</span></span><span style=display:flex><span>print-flag
+</span></span><span style=display:flex><span>flag.txt
+</span></span><span style=display:flex><span>        file/open
+</span></span><span style=display:flex><span>You win!
+</span></span><span style=display:flex><span>string/trimr
+</span></span><span style=display:flex><span>The flag is:
+</span></span><span style=display:flex><span>print-flag
+</span></span><span style=display:flex><span>        You lose!
+</span></span><span style=display:flex><span>The answer was:
+</span></span><span style=display:flex><span>(main &amp;)
+</span></span><span style=display:flex><span>(init-rng)
+</span></span><span style=display:flex><span>*macro-lints*
+</span></span><span style=display:flex><span>(compare-float a b tolerance)
+</span></span><span style=display:flex><span>(compare-coord a b tolerance)
+</span></span><span style=display:flex><span>        precision
+</span></span><span style=display:flex><span>(guessing-game answer)
+</span></span><span style=display:flex><span>*current-file*
+</span></span><span style=display:flex><span>source
+</span></span><span style=display:flex><span>coordinate-peg
+</span></span><span style=display:flex><span>(get-guess)
+</span></span><span style=display:flex><span>(print-flag)
+</span></span></code></pre></div><p>A whole lot of nonsense. The main parts of interest are:</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-text data-lang=text><span style=display:flex><span>init-rng
+</span></span><span style=display:flex><span>os/time
+</span></span><span style=display:flex><span>math/rng
+</span></span><span style=display:flex><span>init-rng
+</span></span></code></pre></div><p>and</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-text data-lang=text><span style=display:flex><span>random-float
+</span></span><span style=display:flex><span>random-float
+</span></span><span style=display:flex><span>math/rng-uniform
+</span></span><span style=display:flex><span>(random-float min max)
+</span></span></code></pre></div><p>Since we know this is a game about guessing coordinates, we can assume it&rsquo;s randomly generating the latitude and longitude.</p><p>But instead of painstakingly reversing this code, let&rsquo;s just reimplement what the original code would have been like.</p><p>We can assume based off the first part of interest that <code>math/rng</code> gets seeded with <code>os/time</code>.</p><p>Then, two random floats are generated, calling <code>math/rng-uniform</code>, which generates a random number in <code>[0, 1)</code>. The <code>random-float</code> function also seems to take in a min and a max, so logically, the most reasonable implementation would look like:</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-text data-lang=text><span style=display:flex><span>random-float = math/rng-uniform # [0, 1)
+</span></span><span style=display:flex><span>random-float *= (max - min)
+</span></span><span style=display:flex><span>random-float += min
+</span></span><span style=display:flex><span># or in one line
+</span></span><span style=display:flex><span>random-float = (math/rng-uniform) * (max - min) + min
+</span></span></code></pre></div><p>Now, some quick googling tells us that latitude ranges from -90 to 90, and longitude from -180 to 180.</p><p>So all we have to do is just reimplement all this logic ourselves, run our code at the same time we connect to the remote server, and just pass in the same coords.</p><p>Here&rsquo;s my reimplementation in <code>janet</code> and corresponding solve script:</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-text data-lang=text><span style=display:flex><span>(def gen (math/rng (os/time)))
+</span></span><span style=display:flex><span>(defn random-float [min max]
+</span></span><span style=display:flex><span>    (+ min (* (- max min) (math/rng-uniform gen)))
+</span></span><span style=display:flex><span>)
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>(def lat (random-float -90 90))
+</span></span><span style=display:flex><span>(def lon (random-float -180 180))
+</span></span><span style=display:flex><span>(print lat &#34;,&#34; lon)
+</span></span></code></pre></div><p>filename=solve.py</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-python data-lang=python><span style=display:flex><span><span style=color:#f92672>import</span> subprocess
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>test <span style=color:#f92672>=</span> subprocess<span style=color:#f92672>.</span>check_output([<span style=color:#e6db74>&#39;./janet&#39;</span>, <span style=color:#e6db74>&#39;test.janet&#39;</span>])
+</span></span><span style=display:flex><span>out <span style=color:#f92672>=</span> test<span style=color:#f92672>.</span>strip()
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#f92672>from</span> pwn <span style=color:#f92672>import</span> remote
+</span></span><span style=display:flex><span><span style=color:#75715e># nc geoguesser.chal.uiuc.tf 1337</span>
+</span></span><span style=display:flex><span>r <span style=color:#f92672>=</span> remote(<span style=color:#e6db74>&#39;geoguesser.chal.uiuc.tf&#39;</span>, <span style=color:#ae81ff>1337</span>)
+</span></span><span style=display:flex><span>r<span style=color:#f92672>.</span>sendline(out)
+</span></span><span style=display:flex><span>r<span style=color:#f92672>.</span>interactive()
+</span></span></code></pre></div><p>After a few tries and praying we get the timing right, we can get the flag.</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-text data-lang=text><span style=display:flex><span>[+] Opening connection to geoguesser.chal.uiuc.tf on port 1337: Done
+</span></span><span style=display:flex><span>[*] Switching to interactive mode
+</span></span><span style=display:flex><span>== proof-of-work: disabled ==
+</span></span><span style=display:flex><span>Welcome to geoguesser!
+</span></span><span style=display:flex><span>Where am I? You win!
+</span></span><span style=display:flex><span>The flag is: uiuctf{i_se3_y0uv3_f0und_7h3_t1m3_t0_r3v_th15_b333b674c1365966}
+</span></span><span style=display:flex><span>[*] Got EOF while reading in interactive
+</span></span><span style=display:flex><span>$
+</span></span><span style=display:flex><span>[*] Interrupted
+</span></span><span style=display:flex><span>[*] Closed connection to geoguesser.chal.uiuc.tf port 1337
+</span></span></code></pre></div><h1 id=pwnykey>Pwnykey</h1><p>The source is pretty small, basically just a simple web-server, so let&rsquo;s take a look at <code>app.py</code>:</p><p>filename=app.py</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-python data-lang=python><span style=display:flex><span><span style=color:#75715e>#!/usr/bin/env python3</span>
+</span></span><span style=display:flex><span><span style=color:#f92672>from</span> flask <span style=color:#f92672>import</span> Flask, request
+</span></span><span style=display:flex><span><span style=color:#f92672>import</span> threading
+</span></span><span style=display:flex><span><span style=color:#f92672>import</span> subprocess
+</span></span><span style=display:flex><span><span style=color:#f92672>import</span> re
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>app <span style=color:#f92672>=</span> Flask(__name__)
+</span></span><span style=display:flex><span>FLAG <span style=color:#f92672>=</span> open(<span style=color:#e6db74>&#39;flag.txt&#39;</span>)<span style=color:#f92672>.</span>read()
+</span></span><span style=display:flex><span>lock <span style=color:#f92672>=</span> threading<span style=color:#f92672>.</span>Lock()
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#a6e22e>@app.route</span>(<span style=color:#e6db74>&#39;/&#39;</span>)
+</span></span><span style=display:flex><span><span style=color:#66d9ef>def</span> <span style=color:#a6e22e>index</span>():
+</span></span><span style=display:flex><span>    <span style=color:#66d9ef>return</span> app<span style=color:#f92672>.</span>send_static_file(<span style=color:#e6db74>&#39;index.html&#39;</span>)
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>key_to_check <span style=color:#f92672>=</span> <span style=color:#e6db74>&#34;00000-00000-00000-00000-00000&#34;</span>
+</span></span><span style=display:flex><span>key_format <span style=color:#f92672>=</span> re<span style=color:#f92672>.</span>compile(<span style=color:#e6db74>r</span><span style=color:#e6db74>&#39;^[0-9A-Z]</span><span style=color:#e6db74>{5}</span><span style=color:#e6db74>-[0-9A-Z]</span><span style=color:#e6db74>{5}</span><span style=color:#e6db74>-[0-9A-Z]</span><span style=color:#e6db74>{5}</span><span style=color:#e6db74>-[0-9A-Z]</span><span style=color:#e6db74>{5}</span><span style=color:#e6db74>-[0-9A-Z]</span><span style=color:#e6db74>{5}</span><span style=color:#e6db74>$&#39;</span>)
+</span></span><span style=display:flex><span><span style=color:#a6e22e>@app.route</span>(<span style=color:#e6db74>&#39;/check&#39;</span>, methods<span style=color:#f92672>=</span>[<span style=color:#e6db74>&#39;GET&#39;</span>, <span style=color:#e6db74>&#39;POST&#39;</span>])
+</span></span><span style=display:flex><span><span style=color:#66d9ef>def</span> <span style=color:#a6e22e>check</span>():
+</span></span><span style=display:flex><span>    <span style=color:#66d9ef>global</span> key_to_check
+</span></span><span style=display:flex><span>    <span style=color:#66d9ef>if</span> request<span style=color:#f92672>.</span>method <span style=color:#f92672>==</span> <span style=color:#e6db74>&#39;GET&#39;</span>:
+</span></span><span style=display:flex><span>        <span style=color:#66d9ef>if</span> request<span style=color:#f92672>.</span>remote_addr <span style=color:#f92672>!=</span> <span style=color:#e6db74>&#39;127.0.0.1&#39;</span>:
+</span></span><span style=display:flex><span>            <span style=color:#66d9ef>return</span> <span style=color:#e6db74>&#34;Forbidden&#34;</span>, <span style=color:#ae81ff>403</span>
+</span></span><span style=display:flex><span>        <span style=color:#66d9ef>try</span>:
+</span></span><span style=display:flex><span>            lock<span style=color:#f92672>.</span>release()
+</span></span><span style=display:flex><span>        <span style=color:#66d9ef>except</span>:
+</span></span><span style=display:flex><span>            <span style=color:#66d9ef>pass</span>
+</span></span><span style=display:flex><span>        <span style=color:#66d9ef>return</span> key_to_check
+</span></span><span style=display:flex><span>    <span style=color:#66d9ef>else</span>:
+</span></span><span style=display:flex><span>        key <span style=color:#f92672>=</span> request<span style=color:#f92672>.</span>form[<span style=color:#e6db74>&#39;key&#39;</span>]
+</span></span><span style=display:flex><span>        <span style=color:#66d9ef>if</span> <span style=color:#f92672>not</span> key_format<span style=color:#f92672>.</span><span style=color:#66d9ef>match</span>(key):
+</span></span><span style=display:flex><span>            <span style=color:#66d9ef>return</span> <span style=color:#e6db74>&#34;Invalid key format&#34;</span>, <span style=color:#ae81ff>400</span>
+</span></span><span style=display:flex><span>        lock<span style=color:#f92672>.</span>acquire()
+</span></span><span style=display:flex><span>        key_to_check <span style=color:#f92672>=</span> key
+</span></span><span style=display:flex><span>        process <span style=color:#f92672>=</span> subprocess<span style=color:#f92672>.</span>Popen([<span style=color:#e6db74>&#39;./node_modules/@devicescript/cli/devicescript&#39;</span>, <span style=color:#e6db74>&#39;run&#39;</span>, <span style=color:#e6db74>&#39;-t&#39;</span>, <span style=color:#e6db74>&#39;keychecker.devs&#39;</span>], stdout<span style=color:#f92672>=</span>subprocess<span style=color:#f92672>.</span>PIPE)
+</span></span><span style=display:flex><span>        <span style=color:#66d9ef>for</span> line <span style=color:#f92672>in</span> iter(process<span style=color:#f92672>.</span>stdout<span style=color:#f92672>.</span>readline, <span style=color:#e6db74>b</span><span style=color:#e6db74>&#39;&#39;</span>):
+</span></span><span style=display:flex><span>            <span style=color:#66d9ef>if</span> <span style=color:#e6db74>b</span><span style=color:#e6db74>&#34;success!&#34;</span> <span style=color:#f92672>in</span> line:
+</span></span><span style=display:flex><span>                process<span style=color:#f92672>.</span>terminate()
+</span></span><span style=display:flex><span>                <span style=color:#66d9ef>return</span> FLAG
+</span></span><span style=display:flex><span>        process<span style=color:#f92672>.</span>wait()
+</span></span><span style=display:flex><span>        <span style=color:#66d9ef>return</span> <span style=color:#e6db74>&#34;Incorrect key&#34;</span>, <span style=color:#ae81ff>400</span>
+</span></span></code></pre></div><p>Nothing too out of the ordinary, except that the <code>/check</code> POST endpoint seems to spawn a keychecker using something called <code>devicescript</code>.</p><p>A quick Google search shows that <a href=https://github.com/microsoft/devicescript><code>devicescript</code></a> is a way for IoT devices to run native TypeScript, but more importantly, we also find that it comes with its own <a href=https://github.com/microsoft/devicescript/blob/main/compiler/src/disassemble.ts>disassembler</a>.</p><p>Unfortunately, trying to disassemble the <code>keychecker.devs</code> as is fails, giving some cryptic error about wrong jump target.</p><p>After a bit, my teammate managed to find a pattern (thanks vishi), that could clean up the <code>keychecker.devs</code> program and leave it in a state where it was actually disassemblable.</p><p>filename=fix_devs.py</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-python data-lang=python><span style=display:flex><span><span style=color:#66d9ef>def</span> <span style=color:#a6e22e>find_all</span>(a_string, sub):
+</span></span><span style=display:flex><span>    result <span style=color:#f92672>=</span> []
+</span></span><span style=display:flex><span>    k <span style=color:#f92672>=</span> <span style=color:#ae81ff>0</span>
+</span></span><span style=display:flex><span>    <span style=color:#66d9ef>while</span> k <span style=color:#f92672>&lt;</span> len(a_string):
+</span></span><span style=display:flex><span>        k <span style=color:#f92672>=</span> a_string<span style=color:#f92672>.</span>find(sub, k)
+</span></span><span style=display:flex><span>        <span style=color:#66d9ef>if</span> k <span style=color:#f92672>==</span> <span style=color:#f92672>-</span><span style=color:#ae81ff>1</span>:
+</span></span><span style=display:flex><span>            <span style=color:#66d9ef>return</span> result
+</span></span><span style=display:flex><span>        <span style=color:#66d9ef>else</span>:
+</span></span><span style=display:flex><span>            result<span style=color:#f92672>.</span>append(k)
+</span></span><span style=display:flex><span>            <span style=color:#75715e>#k += 1 #change to k += len(sub) to not search overlapping results</span>
+</span></span><span style=display:flex><span>            k <span style=color:#f92672>+=</span> len(sub)
+</span></span><span style=display:flex><span>    <span style=color:#66d9ef>return</span> result
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>data <span style=color:#f92672>=</span> open(<span style=color:#e6db74>&#34;keychecker.devs&#34;</span>, <span style=color:#e6db74>&#34;rb&#34;</span>)<span style=color:#f92672>.</span>read()
+</span></span><span style=display:flex><span>NEEDLE <span style=color:#f92672>=</span> bytes<span style=color:#f92672>.</span>fromhex(<span style=color:#e6db74>&#34;0df90007&#34;</span>)
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#75715e># find all intstances of needle</span>
+</span></span><span style=display:flex><span>idxs <span style=color:#f92672>=</span> find_all(data, NEEDLE)
+</span></span><span style=display:flex><span>data_l <span style=color:#f92672>=</span> list(data)
+</span></span><span style=display:flex><span><span style=color:#66d9ef>for</span> idx <span style=color:#f92672>in</span> idxs:
+</span></span><span style=display:flex><span>    data_l[idx <span style=color:#f92672>+</span> <span style=color:#ae81ff>6</span>] <span style=color:#f92672>=</span> <span style=color:#ae81ff>0</span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>open(<span style=color:#e6db74>&#34;keychecker_fixed.devs&#34;</span>, <span style=color:#e6db74>&#34;wb&#34;</span>)<span style=color:#f92672>.</span>write(bytes(data_l))
+</span></span></code></pre></div><p>Now we can actually disassemble the program and figure out how to make a valid key.</p><h2 id=disassembled>Disassembled</h2><p>The full disassembly is a bit long, so I&rsquo;ll leave it as an unlisted pastebin <a href=https://pastebin.com/qrAw4CQd>here</a>. The points of interest will be shown in the writeup, with a bit of cleaning.</p><p>Anyway, starting out the disassembly is the main function:</p><pre tabindex=0><code>proc main_F0(): @1120
+  locals: loc0,loc1,loc2
+   0:     CALL prototype_F1()
+  10:     CALL ds.&#34;format&#34;(&#34;start!&#34;)
+  22:     CALL ds.&#34;print&#34;(62, ret_val())
+  
+  34:     CALL fetch_F2(&#34;http://localhost/check&#34;)
+  46:     CALL ret_val().&#34;text&#34;()
+  57:     CALL ret_val().&#34;trim&#34;()
+  68:     {G4} := ret_val()
+  78:     CALL ds.&#34;format&#34;(&#34;fetched key: {0}&#34;, {G4})
+  92:     CALL ds.&#34;print&#34;(62, ret_val())
+</code></pre><p>The first thing it does is print <code>start!</code>, then fetches the user-submitted key from <code>/check</code>, and prints it out:</p><pre tabindex=0><code> 104:     JMP 143 IF NOT ({G4}.&#34;length&#34; !== 29)
+ 121:     CALL (new Error)(&#34;Invalid key&#34;)
+ 134:     THROW ret_val()
+ 
+ 143:     CALL {G4}.&#34;split&#34;(&#34;-&#34;)
+ 157:     {G5} := ret_val()
+ 167:     JMP 206 IF NOT ({G5}.&#34;length&#34; !== 5)
+ 184:     CALL (new Error)(&#34;Invalid key&#34;)
+ 197:     THROW ret_val()
+ 
+ 206:     CALL {G5}.&#34;some&#34;(inline_F7)
+ 220:     JMP 254 IF NOT ret_val()
+ 232:     CALL (new Error)(&#34;Invalid key&#34;)
+ 245:     THROW ret_val()
+</code></pre><p>Then it checks if the length of the key is 29, and splits it by <code>-</code>, and checks if there are exactly 5 split segments, each of length 5.</p><p>The <code>inline_F7</code> function just checks if each individual segment is length 5:</p><pre tabindex=0><code>proc inline_F7(par0): @4916
+   0:     RETURN (par0.&#34;length&#34; !== 5)
+</code></pre><p>Next, it checks that each segment passes a check called <code>inline_F8</code>:</p><pre tabindex=0><code> 254:     CALL {G5}.&#34;some&#34;(CLOSURE(inline_F8))
+ 268:     JMP 302 IF NOT ret_val()
+ 280:     CALL (new Error)(&#34;Invalid key&#34;)
+ 293:     THROW ret_val()
+ 302:     CALL ds.&#34;format&#34;(&#34;key format ok&#34;)
+ 314:     CALL ds.&#34;print&#34;(62, ret_val())
+...
+proc inline_F8(par0): @4924
+   0:     CALL par0.&#34;split&#34;(&#34;&#34;)
+  14:     CALL ret_val().&#34;some&#34;(inline_F14)
+  27:     RETURN ret_val()
+...
+proc inline_F14(par0): @5292
+   0:     CALL &#34;0123456789ABCDFGHJKLMNPQRSTUWXYZ&#34;.&#34;includes&#34;(par0)
+  14:     RETURN !ret_val()
+</code></pre><p>Following the logic, we see that each splits each segment again into individual letters, then checks to see if the letters are in <code>0123456789ABCDFGHJKLMNPQRSTUWXYZ</code>. If any are not, it throws an error.</p><p>The next part calls <code>inline_F9</code> on each segment, which then calls <code>inline_F15</code> on each letter in each segment. <code>inline_F15</code> just returns the index of the letter in the previously establish alphabet, so this entire process just maps all the letters to their respective indices:</p><pre tabindex=0><code> 326:     CALL {G5}.&#34;map&#34;(CLOSURE(inline_F9))
+...
+proc inline_F9(par0): @4956
+   0:     CALL par0.&#34;split&#34;(&#34;&#34;)
+  14:     CALL ret_val().&#34;map&#34;(inline_F15)
+  27:     RETURN ret_val()
+...
+proc inline_F15(par0): @5312
+   0:     CALL &#34;0123456789ABCDFGHJKLMNPQRSTUWXYZ&#34;.&#34;indexOf&#34;(par0)
+  14:     RETURN ret_val()
+  
+ex: &#34;ABCDE&#34; -&gt; [10, 11, 12, 13, 14]
+</code></pre><p>It then stores each segment into its own variable:</p><pre tabindex=0><code> 340:     loc0 := ret_val()
+ 350:     {G6} := loc0[0]
+ 363:     {G7} := loc0[1]
+ 376:     {G8} := loc0[2]
+ 389:     {G9} := loc0[3]
+ 402:     {G10} := loc0[4]
+</code></pre><h3 id=check-1>Check 1</h3><p>The next part checks <code>G6</code>:</p><pre tabindex=0><code> 415:     CALL ds.&#34;format&#34;(&#34;{0}&#34;, {G6})
+ 429:     loc0 := ret_val()
+ 439:     ALLOC_ARRAY initial_size=5
+ 448:     loc1 := ret_val()
+ 458:     loc1[0] := 30
+ 470:     loc1[1] := 10
+ 482:     loc1[2] := 21
+ 494:     loc1[3] := 29
+ 506:     loc1[4] := 10
+ 518:     CALL ds.&#34;format&#34;(&#34;{0}&#34;, loc1)
+</code></pre><p>It stores <code>G6</code> into <code>loc0</code>, then creates another array in <code>loc1</code>, and stores <code>[30, 10, 21, 29, 10]</code> into <code>loc1</code>. If <code>loc0</code> is not equal to <code>loc1</code>, then it prints <code>invalid key</code>, but otherwise it prints <code>passed check1</code>:</p><pre tabindex=0><code> 518:     CALL ds.&#34;format&#34;(&#34;{0}&#34;, loc1)
+ 532:     JMP 569 IF NOT (loc0 !== ret_val())
+ 
+ 547:     CALL (new Error)(&#34;Invalid key&#34;)
+ 560:     THROW ret_val()
+ 
+ 569:     CALL ds.&#34;format&#34;(&#34;passed check1&#34;)
+ 581:     CALL ds.&#34;print&#34;(62, ret_val())
+</code></pre><p>So we know the first part of the key is <code>[30, 10, 21, 29, 10]</code>, which translates to <code>YANXA</code> (remember, each number is a corresponding index in the alphabet)</p><h3 id=check-2>Check 2</h3><p>Then, <code>G7</code> and <code>G8</code> are checked at the same time:</p><pre tabindex=0><code> 593:     CALL concat_F10({G7}, {G8})
+ 607:     {G11} := ret_val()
+ 
+ 617:     CALL {G11}.&#34;reduce&#34;(inline_F11, 0)
+ 632:     loc0 := (ret_val() !== 134)
+ 645:     JMP 687 IF NOT !loc0
+ 
+ 659:     CALL {G11}.&#34;reduce&#34;(inline_F12, 1)
+ 674:     loc0 := (ret_val() !== 12534912000)
+ 687:     JMP 722 IF NOT loc0
+ 
+ 700:     CALL (new Error)(&#34;Invalid key&#34;)
+ 713:     THROW ret_val()
+ 722:     CALL ds.&#34;format&#34;(&#34;passed check2&#34;)
+ 734:     CALL ds.&#34;print&#34;(62, ret_val())
+</code></pre><p>They are concatenated together into <code>G11</code>, then pass two checks, <code>inline_F11</code> and <code>inline_F12</code>. Since <code>reduce</code> is called on <code>G11</code>, we know that the two inline functions must be accumulators, and they end up being sum and product respectively:</p><pre tabindex=0><code>proc inline_F11(par0, par1): @5148
+   0:     RETURN (par0 + par1)
+
+proc inline_F12(par0, par1): @5156
+   0:     RETURN (par0 * par1)
+</code></pre><p>This means that <code>G11</code> must contain 10 numbers that add up to <code>134</code>, and have a product of <code>12534912000</code>. Of course, we can easily just solve this with <code>z3</code>:</p><p>filename=z3solve.py</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-python data-lang=python><span style=display:flex><span><span style=color:#f92672>import</span> z3
+</span></span><span style=display:flex><span>s <span style=color:#f92672>=</span> z3<span style=color:#f92672>.</span>Solver()
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>x <span style=color:#f92672>=</span> [z3<span style=color:#f92672>.</span>Int(<span style=color:#e6db74>f</span><span style=color:#e6db74>&#34;x</span><span style=color:#e6db74>{</span>i<span style=color:#e6db74>}</span><span style=color:#e6db74>&#34;</span>) <span style=color:#66d9ef>for</span> i <span style=color:#f92672>in</span> range(<span style=color:#ae81ff>10</span>)]
+</span></span><span style=display:flex><span><span style=color:#75715e># ten numbers add up to 134, multiply to 12534912000</span>
+</span></span><span style=display:flex><span>s<span style=color:#f92672>.</span>add(sum(x) <span style=color:#f92672>==</span> <span style=color:#ae81ff>134</span>)
+</span></span><span style=display:flex><span>s<span style=color:#f92672>.</span>add(z3<span style=color:#f92672>.</span>Product(x) <span style=color:#f92672>==</span> <span style=color:#ae81ff>12534912000</span>)
+</span></span><span style=display:flex><span><span style=color:#66d9ef>for</span> i <span style=color:#f92672>in</span> range(<span style=color:#ae81ff>10</span>):
+</span></span><span style=display:flex><span>    s<span style=color:#f92672>.</span>add(x[i] <span style=color:#f92672>&gt;=</span> <span style=color:#ae81ff>0</span>)
+</span></span><span style=display:flex><span>    s<span style=color:#f92672>.</span>add(x[i] <span style=color:#f92672>&lt;</span> <span style=color:#ae81ff>32</span>) <span style=color:#75715e># only 32 characters in alphabet</span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>s<span style=color:#f92672>.</span>check()
+</span></span><span style=display:flex><span>m <span style=color:#f92672>=</span> s<span style=color:#f92672>.</span>model()
+</span></span><span style=display:flex><span>print(m)
+</span></span><span style=display:flex><span>nums <span style=color:#f92672>=</span> []
+</span></span><span style=display:flex><span><span style=color:#66d9ef>for</span> i <span style=color:#f92672>in</span> range(<span style=color:#ae81ff>10</span>):
+</span></span><span style=display:flex><span>    nums<span style=color:#f92672>.</span>append(m[x[i]]<span style=color:#f92672>.</span>as_long())
+</span></span><span style=display:flex><span>print(nums)
+</span></span><span style=display:flex><span><span style=color:#75715e># [15, 2, 15, 5, 4, 9, 13, 16, 31, 24]</span>
+</span></span></code></pre></div><p>Since the check was done with <code>reduce</code>, the order of the numbers don&rsquo;t matter, so we can just translate them directly, giving us the next two sections: <code>YANXA-G2G54-9DHZR</code></p><h3 id=check-3>Check 3</h3><p>The next (and final) part is the most complex. First, <code>G9</code> is stored into <code>G12</code>, and <code>G13</code> is set to <code>1337</code>. Then, a loop is run 420 times, each time calling <code>nextInt_F13</code>:</p><pre tabindex=0><code> 746:     {G12} := {G9}
+ 757:     {G13} := 1337
+ 
+ 770:     loc2 := 0
+ 780:     JMP 832 IF NOT (loc2 &lt; 420)
+ 798:     CALL nextInt_F13()
+ 808:     loc2 := (loc2 + 1)
+ 821:     JMP 780
+</code></pre><p>Looking at <code>nextInt_F13</code>, we find what seems to be a basic <code>xorshift</code> PRNG, with a small addition as <code>G13</code> is used to modify the output:</p><pre tabindex=0><code>proc nextInt_F13(): @5164
+  locals: loc0
+   0:     CALL {G12}.&#34;pop&#34;()
+  12:     loc0 := ret_val()
+  
+  22:     loc0 := (loc0 ^ ((loc0 &gt;&gt; 2) &amp; 4294967295))
+  41:     loc0 := (loc0 ^ ((loc0 &lt;&lt; 1) &amp; 4294967295))
+  60:     loc0 := (loc0 ^ (({G12}[0] ^ ({G12}[0] &lt;&lt; 4)) &amp; 4294967295))
+  
+  86:     {G13} := (({G13} + 13371337) &amp; 4294967295
+ 106:     CALL {G12}.&#34;unshift&#34;(loc0)
+ 120:     RETURN (loc0 + {G13})
+</code></pre><p>This PRNG pops the last value of <code>G12</code>, does <code>xorshift</code> operations, then inserts it back into the start of <code>G12</code>. <code>G13</code> is increased by <code>13371337</code>, then added to the final output of the PRNG.</p><p>Going back to the main function, after the loop is run, an array is created and initialized with 3 calls to <code>nextInt_F13</code>, then compared with another array:</p><pre tabindex=0><code> 832:     ALLOC_ARRAY initial_size=3
+ 841:     loc0 := ret_val()
+ 851:     CALL nextInt_F13()
+ 861:     loc0[0] := ret_val()
+ 873:     CALL nextInt_F13()
+ 883:     loc0[1] := ret_val()
+ 895:     CALL nextInt_F13()
+ 905:     loc0[2] := ret_val()
+ 917:     CALL ds.&#34;format&#34;(&#34;{0}&#34;, loc0)
+ 931:     loc0 := ret_val()
+ 
+ 941:     ALLOC_ARRAY initial_size=3
+ 950:     loc1 := ret_val()
+ 960:     loc1[0] := 2897974129
+ 973:     loc1[1] := -549922559
+ 990:     loc1[2] := -387684011
+1007:     CALL ds.&#34;format&#34;(&#34;{0}&#34;, loc1)
+
+1021:     JMP 1058 IF NOT (loc0 !== ret_val())
+1036:     CALL (new Error)(&#34;Invalid key&#34;)
+1049:     THROW ret_val()
+
+1058:     CALL ds.&#34;format&#34;(&#34;passed check3&#34;)
+1070:     CALL ds.&#34;print&#34;(62, ret_val())
+</code></pre><p>This means to pass this check, we need to somehow initialize <code>G12</code> with the proper state so that after 420 <code>nextInt</code> calls, we generate the exact integers <code>[2897974129, -549922559, -387684011]</code>.</p><p>Before we start trying to solve this, another thing to realize is that <code>G13</code> is actually independent from the rest of the PRNG, since it only affects the output, not what is added back to <code>G12</code>. So we can pre-calculate its effects and find an adjusted target like so:</p><p>filename=calc_g13.py</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-python data-lang=python><span style=display:flex><span><span style=color:#f92672>import</span> ctypes
+</span></span><span style=display:flex><span>target <span style=color:#f92672>=</span> [<span style=color:#ae81ff>2897974129</span>, <span style=color:#f92672>-</span><span style=color:#ae81ff>549922559</span>, <span style=color:#f92672>-</span><span style=color:#ae81ff>387684011</span>]
+</span></span><span style=display:flex><span>g13 <span style=color:#f92672>=</span> <span style=color:#ae81ff>1337</span>
+</span></span><span style=display:flex><span><span style=color:#66d9ef>for</span> _ <span style=color:#f92672>in</span> range(<span style=color:#ae81ff>420</span>):
+</span></span><span style=display:flex><span>    g13 <span style=color:#f92672>=</span> ctypes<span style=color:#f92672>.</span>c_int32(g13 <span style=color:#f92672>+</span> <span style=color:#ae81ff>13371337</span>)<span style=color:#f92672>.</span>value
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#66d9ef>for</span> i <span style=color:#f92672>in</span> range(<span style=color:#ae81ff>3</span>):
+</span></span><span style=display:flex><span>    g13 <span style=color:#f92672>=</span> ctypes<span style=color:#f92672>.</span>c_int32(g13 <span style=color:#f92672>+</span> <span style=color:#ae81ff>13371337</span>)<span style=color:#f92672>.</span>value
+</span></span><span style=display:flex><span>    target[i] <span style=color:#f92672>-=</span> g13
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>print(target)
+</span></span><span style=display:flex><span><span style=color:#75715e># [1563607211, -1897660814, -1748793603]</span>
+</span></span></code></pre></div><p>As for solving the actual xorshift part, after a bit of mucking around with Z3 and reversing, we realized that brute force was actually feasible. This is because there are only 5 numbers in the state, and each number can only have an initial value in 0-31, since there are only 32 letters in the alphabet.</p><p>That leaves a total search space of <code>2^(5*5) = 33554432</code> which is definitely small enough to brute force.</p><p>I ended up coding my brute force in c++, directly translating the logic over:</p><p>filename=brute.cpp</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-c++ data-lang=c++><span style=display:flex><span><span style=color:#75715e>#include</span> <span style=color:#75715e>&lt;iostream&gt;</span><span style=color:#75715e>
+</span></span></span><span style=display:flex><span><span style=color:#75715e>#include</span> <span style=color:#75715e>&lt;string&gt;</span><span style=color:#75715e>
+</span></span></span><span style=display:flex><span><span style=color:#75715e>#include</span> <span style=color:#75715e>&lt;vector&gt;</span><span style=color:#75715e>
+</span></span></span><span style=display:flex><span><span style=color:#75715e></span>
+</span></span><span style=display:flex><span><span style=color:#66d9ef>using</span> <span style=color:#66d9ef>namespace</span> std;
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>vector<span style=color:#f92672>&lt;</span><span style=color:#66d9ef>int</span><span style=color:#f92672>&gt;</span> state(<span style=color:#ae81ff>5</span>);
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#66d9ef>int</span> <span style=color:#a6e22e>nextInt</span>(){
+</span></span><span style=display:flex><span>    <span style=color:#66d9ef>int</span> last <span style=color:#f92672>=</span> state.back();
+</span></span><span style=display:flex><span>    state.pop_back();
+</span></span><span style=display:flex><span>    
+</span></span><span style=display:flex><span>    <span style=color:#66d9ef>int</span> nxt <span style=color:#f92672>=</span> last <span style=color:#f92672>^</span> (last <span style=color:#f92672>&gt;&gt;</span> <span style=color:#ae81ff>2</span>);
+</span></span><span style=display:flex><span>    nxt <span style=color:#f92672>=</span> nxt <span style=color:#f92672>^</span> (nxt <span style=color:#f92672>&lt;&lt;</span> <span style=color:#ae81ff>1</span>);
+</span></span><span style=display:flex><span>    nxt <span style=color:#f92672>=</span> nxt <span style=color:#f92672>^</span> (state[<span style=color:#ae81ff>0</span>] <span style=color:#f92672>^</span> (state[<span style=color:#ae81ff>0</span>] <span style=color:#f92672>&lt;&lt;</span> <span style=color:#ae81ff>4</span>));
+</span></span><span style=display:flex><span>    state.insert(state.begin(), nxt);
+</span></span><span style=display:flex><span>    <span style=color:#66d9ef>return</span> nxt;
+</span></span><span style=display:flex><span>}
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#66d9ef>int</span> <span style=color:#a6e22e>main</span>(){
+</span></span><span style=display:flex><span>    <span style=color:#75715e>// start
+</span></span></span><span style=display:flex><span><span style=color:#75715e></span>    cout <span style=color:#f92672>&lt;&lt;</span> time(<span style=color:#ae81ff>0</span>) <span style=color:#f92672>&lt;&lt;</span> endl;
+</span></span><span style=display:flex><span>    <span style=color:#66d9ef>for</span>(<span style=color:#66d9ef>int</span> a <span style=color:#f92672>=</span> <span style=color:#ae81ff>0</span>; a <span style=color:#f92672>&lt;</span> <span style=color:#ae81ff>32</span>; a<span style=color:#f92672>++</span>){
+</span></span><span style=display:flex><span>    <span style=color:#66d9ef>for</span>(<span style=color:#66d9ef>int</span> b <span style=color:#f92672>=</span> <span style=color:#ae81ff>0</span>; b <span style=color:#f92672>&lt;</span> <span style=color:#ae81ff>32</span>; b<span style=color:#f92672>++</span>){
+</span></span><span style=display:flex><span>    <span style=color:#66d9ef>for</span>(<span style=color:#66d9ef>int</span> c <span style=color:#f92672>=</span> <span style=color:#ae81ff>0</span>; c <span style=color:#f92672>&lt;</span> <span style=color:#ae81ff>32</span>; c<span style=color:#f92672>++</span>){
+</span></span><span style=display:flex><span>    <span style=color:#66d9ef>for</span>(<span style=color:#66d9ef>int</span> d <span style=color:#f92672>=</span> <span style=color:#ae81ff>0</span>; d <span style=color:#f92672>&lt;</span> <span style=color:#ae81ff>32</span>; d<span style=color:#f92672>++</span>){
+</span></span><span style=display:flex><span>    <span style=color:#66d9ef>for</span>(<span style=color:#66d9ef>int</span> e <span style=color:#f92672>=</span> <span style=color:#ae81ff>0</span>; e <span style=color:#f92672>&lt;</span> <span style=color:#ae81ff>32</span>; e<span style=color:#f92672>++</span>){
+</span></span><span style=display:flex><span>        state <span style=color:#f92672>=</span> {a, b, c, d, e};
+</span></span><span style=display:flex><span>        <span style=color:#66d9ef>for</span>(<span style=color:#66d9ef>int</span> i <span style=color:#f92672>=</span> <span style=color:#ae81ff>0</span>; i <span style=color:#f92672>&lt;</span> <span style=color:#ae81ff>420</span>; i<span style=color:#f92672>++</span>){
+</span></span><span style=display:flex><span>            nextInt();
+</span></span><span style=display:flex><span>        }
+</span></span><span style=display:flex><span>        <span style=color:#75715e>// 1563607211, -1897660814, -1748793603
+</span></span></span><span style=display:flex><span><span style=color:#75715e></span>        <span style=color:#66d9ef>int</span> tmp <span style=color:#f92672>=</span> nextInt();
+</span></span><span style=display:flex><span>        <span style=color:#66d9ef>if</span>(tmp <span style=color:#f92672>==</span> <span style=color:#ae81ff>1563607211</span>){
+</span></span><span style=display:flex><span>            tmp <span style=color:#f92672>=</span> nextInt();
+</span></span><span style=display:flex><span>            <span style=color:#66d9ef>if</span>(tmp <span style=color:#f92672>==</span> <span style=color:#f92672>-</span><span style=color:#ae81ff>1897660814</span>){
+</span></span><span style=display:flex><span>                tmp <span style=color:#f92672>=</span> nextInt();
+</span></span><span style=display:flex><span>                <span style=color:#66d9ef>if</span> (tmp <span style=color:#f92672>==</span> <span style=color:#f92672>-</span><span style=color:#ae81ff>1748793603</span>){
+</span></span><span style=display:flex><span>                    cout <span style=color:#f92672>&lt;&lt;</span> <span style=color:#e6db74>&#34;found! &#34;</span> <span style=color:#f92672>&lt;&lt;</span> a <span style=color:#f92672>&lt;&lt;</span> <span style=color:#e6db74>&#34; &#34;</span> <span style=color:#f92672>&lt;&lt;</span> b <span style=color:#f92672>&lt;&lt;</span> <span style=color:#e6db74>&#34; &#34;</span> <span style=color:#f92672>&lt;&lt;</span> c <span style=color:#f92672>&lt;&lt;</span> <span style=color:#e6db74>&#34; &#34;</span> <span style=color:#f92672>&lt;&lt;</span> d <span style=color:#f92672>&lt;&lt;</span> <span style=color:#e6db74>&#34; &#34;</span> <span style=color:#f92672>&lt;&lt;</span> e <span style=color:#f92672>&lt;&lt;</span> endl;
+</span></span><span style=display:flex><span>                    cout <span style=color:#f92672>&lt;&lt;</span> time(<span style=color:#ae81ff>0</span>) <span style=color:#f92672>&lt;&lt;</span> endl;
+</span></span><span style=display:flex><span>                    <span style=color:#66d9ef>return</span> <span style=color:#ae81ff>0</span>;
+</span></span><span style=display:flex><span>                }
+</span></span><span style=display:flex><span>            }
+</span></span><span style=display:flex><span>        }
+</span></span><span style=display:flex><span>    }
+</span></span><span style=display:flex><span>    }
+</span></span><span style=display:flex><span>    }
+</span></span><span style=display:flex><span>    }
+</span></span><span style=display:flex><span>    }
+</span></span><span style=display:flex><span>    cout <span style=color:#f92672>&lt;&lt;</span> time(<span style=color:#ae81ff>0</span>) <span style=color:#f92672>&lt;&lt;</span> endl;
+</span></span><span style=display:flex><span>    <span style=color:#66d9ef>return</span> <span style=color:#ae81ff>1</span>;
+</span></span><span style=display:flex><span>}
+</span></span></code></pre></div><p>Even though the code is kinda ugly and unoptimized, compiling with <code>-O3</code> and letting it run only took ~60 seconds to finish and spit out a valid answer:</p><pre tabindex=0><code>$ g++ -o brute -O3 &#39;brute.cpp&#39;
+$ ./brute
+1688339552
+found! 14 11 22 2 27
+1688339618
+</code></pre><h3 id=finale>Finale</h3><p>Now our key is looking like <code>YANXA-G2G54-9DHZR-FBP2U</code>. But what about the last part? Well going back to the disassembly, we see that after passing the 3rd check, the last segment isn&rsquo;t used at all. Instead, after passing check 3, the program just prints <code>success!</code> and exits:</p><pre tabindex=0><code>1058:     CALL ds.&#34;format&#34;(&#34;passed check3&#34;)
+1070:     CALL ds.&#34;print&#34;(62, ret_val())
+1082:     CALL ds.&#34;format&#34;(&#34;success!&#34;)
+1094:     CALL ds.&#34;print&#34;(62, ret_val())
+1106:     RETURN 0
+</code></pre><p>This means we can do anything for the last 5 digits, so of course, our key is now:
+<code>YANXA-G2G54-9DHZR-FBP2U-XDUWU</code></p><p>Passing this to the website, we&rsquo;re finally <em>finally</em> able to get our proper PwnyOS license! Oh, and the flag too</p><pre tabindex=0><code>uiuctf{abbe62185750af9c2e19e2f2}
+</code></pre></div></div></main></div><script>function handle_open(e){let t=e.target;e.target.tagName==="SUMMARY"&&(t=e.target.querySelector(".code-summary-inner")),t.classList.toggle("open"),t.classList.contains("open")?t.textContent="Click to collapse "+t.textContent.split(" ").slice(3).join(" "):t.textContent="Click to expand "+t.textContent.split(" ").slice(3).join(" ")}let code_divs=document.querySelectorAll("div.highlight"),to_remove=[];for(let e of code_divs){let t="",n=e.previousElementSibling;n.tagName=="P"&&(n=n.textContent,n.startsWith("filename")&&(t=n.split("=")[1].trim(),to_remove.push(e.previousElementSibling)));let s=e.querySelector("pre code"),o=s.textContent.split(`
+`).length;if(t!==""||o>10){let n=document.createElement("details"),o=document.createElement("summary"),i=document.createElement("span");i.textContent="Click to expand",t!==""&&(i.textContent+=" "+t,n.setAttribute("id",t)),i.classList.add("code-summary-inner"),o.appendChild(i),o.addEventListener("click",handle_open),o.classList.add("code-summary"),s.classList.add("code-inner"),e.parentNode.insertBefore(n,e),n.appendChild(o),n.appendChild(e),n.classList.add("code-wrapper")}}for(let e of to_remove)e.remove();let anchors=document.querySelectorAll(".postWrapper a");for(let e of anchors)e.host!==window.location.host&&(e.setAttribute("target","_blank"),e.setAttribute("rel","noopener noreferrer"))</script><footer class=footer>© 2023 flocto, Built with
+<a href=https://gohugo.io class=footerLink>Hugo</a> and (an edited)
+<a href=https://github.com/LordMathis/hugo-theme-nightfall class=footerLink>Nightfall</a> theme</footer></div></body></html>
