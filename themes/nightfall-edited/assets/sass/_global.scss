@@ -28,6 +28,10 @@ a:visited:hover {
   color: $lightpurple;
 }
 
+.code-summary-inner {
+  color: $lightwhite;
+}
+
 pre code {
   font-family: $fontCode;
   font-size: 95%;
