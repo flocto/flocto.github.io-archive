@@ -564,7 +564,7 @@ The next (and final) part is the most complex. First, `G9` is stored into `G12`,
  808:     loc2 := (loc2 + 1)
  821:     JMP 780
 ```
-Looking at `nextInt_F13`, we find what seems to be a basic `xorshift` PRNG, with a small addition as `G13` is used to modify the output:
+Looking at `nextInt_F13`, we find what seems to be a basic [`xorwow`](https://en.wikipedia.org/wiki/Xorshift#xorwow) PRNG, with `G13` serving as the counter to modify the output:
 ```
 proc nextInt_F13(): @5164
   locals: loc0
@@ -579,7 +579,7 @@ proc nextInt_F13(): @5164
  106:     CALL {G12}."unshift"(loc0)
  120:     RETURN (loc0 + {G13})
 ```
-This PRNG pops the last value of `G12`, does `xorshift` operations, then inserts it back into the start of `G12`. `G13` is increased by `13371337`, then added to the final output of the PRNG.
+This PRNG pops the last value of `G12`, does `xorshift` operations, then inserts it back into the start of `G12`. Then, at the same time, `G13` is increased by `13371337`, and only added to the final output of the PRNG.
 
 Going back to the main function, after the loop is run, an array is created and initialized with 3 calls to `nextInt_F13`, then compared with another array:
 ```
@@ -611,7 +611,8 @@ Going back to the main function, after the loop is run, an array is created and 
 
 This means to pass this check, we need to somehow initialize `G12` with the proper state so that after 420 `nextInt` calls, we generate the exact integers `[2897974129, -549922559, -387684011]`. 
 
-Before we start trying to solve this, another thing to realize is that `G13` is actually independent from the rest of the PRNG, since it only affects the output, not what is added back to `G12`. So we can pre-calculate its effects and find an adjusted target like so:
+Before we start trying to solve this, another thing to realize is that `G13`, the counter, can be solved seperately from the rest of the `xorwow` PRNG. Since we know the amount of times
+the PRNG is called, we can pre-calculate the value `G13` when it will be called the last 3 times, and just subtract them from the target values:
 
 filename=calc_g13.py
 ```python
@@ -717,4 +718,127 @@ Passing this to the website, we're finally *finally* able to get our proper Pwny
 ```
 uiuctf{abbe62185750af9c2e19e2f2}
 ```
+
+# Schrödinger's Cat
+Finally, we're at the last challenge. This one is a bit different from the rest, and involves constructing a quantum circuit to solve a problem. Don't worry though, this writeup assumes no prior knowledge of quantum computing, and will explain everything you need to know.
+
+First, let's take a look at the provided file:
+
+filename=server.py
+```python
+#!/usr/bin/env python3
+
+from os import system
+from base64 import b64decode
+import numpy as np
+
+from qiskit import QuantumCircuit
+import qiskit.quantum_info as qi
+from qiskit.circuit.library import StatePreparation
+
+WIRES = 5
+
+
+def normalization(msg):
+    assert(len(msg) <= WIRES**2)
+    state = np.array([ord(c) for c in msg.ljust(2**WIRES, ' ')])
+    norm = np.linalg.norm(state)
+    state = state / norm
+    return (state, norm)
+
+def transform(sv, n):
+    legal = lambda c: ord(' ') <= c and c <= ord('~')
+    renormalized = [float(i.real)*n for i in sv]
+    rn_rounded = [round(i) for i in renormalized]
+    if not np.allclose(renormalized, rn_rounded, rtol=0, atol=1e-2):
+        print("Your rehydrated statevector isn't very precise. Try adding at least 6 decimal places of precision, or contact the challenge author if you think this is a mistake.")
+        print(rn_rounded)
+        exit(0)
+    if np.any([not legal(c) for c in rn_rounded]):
+        print("Invalid ASCII characters.")
+        exit(0)
+    return ''.join([chr(n) for n in rn_rounded])
+
+def make_circ(sv, circ):
+    qc = QuantumCircuit(WIRES)
+    qc.append(circ.to_instruction(), range(WIRES))
+    sp = QuantumCircuit(WIRES, name="echo 'Hello, world!'")
+    sp.append(StatePreparation(sv), range(WIRES))
+    qc.append(sp.to_instruction(), range(WIRES))
+    return qc
+
+def print_given(sv, n):
+    placeholder = QuantumCircuit(WIRES, name="Your Circ Here")
+    placeholder.i(0)
+
+    circ = make_circ(sv, placeholder)
+    print(circ.draw(style={
+        "displaytext": {
+            "state_preparation": "<>"
+            }
+        }))
+    new_sv = qi.Statevector.from_instruction(circ)
+    print(f'Normalization constant: {n}')
+    print("\nExecuting...\n")
+    system(transform(new_sv, n))
+
+def main():
+    print("Welcome to the Quantum Secure Shell. Instead of dealing with pesky encryption, just embed your commands into our quantum computer! I batched the next command in with yours, hope you're ok with that!")
+
+    given_sv, given_n = normalization("echo 'Hello, world!'")
+    print_given(given_sv, given_n)
+
+    try:
+        qasm_str = b64decode(input("\nPlease type your OpenQASM circuit as a base64 encoded string: ")).decode()
+    except:
+        print("Error decoding b64!")
+        exit(0)
+    try:
+        circ = QuantumCircuit.from_qasm_str(qasm_str)
+        circ.remove_final_measurements(inplace=True)
+    except:
+        print("Error processing OpenQASM file! Try decomposing your circuit into basis gates using `transpile`.")
+        exit(0)
+    if circ.num_qubits != WIRES:
+        print(f"Your quantum circuit acts on {circ.num_qubits} instead of {WIRES} qubits!")
+        exit(0)
+
+    try:
+        norm = float(input("Please enter your normalization constant (precision matters!): "))
+    except:
+        print("Error processing normalization constant!")
+        exit(0)
+    try:
+        sv_circ = make_circ(given_sv, circ)
+    except:
+        print("Circuit runtime error!")
+        exit(0)
+
+    print(sv_circ.draw())
+    command = transform(qi.Statevector.from_instruction(sv_circ), norm)
+
+    print("\nExecuting...\n")
+    system(command)
+
+if __name__ == "__main__":
+    main()
+```
+
+It might look like a lot, so I'll break it down step by step.
+
+First, the server prints a welcome message, then executes its built-in quantum circuit and prints out its result:
+```python
+def main():
+    print("Welcome to the Quantum Secure Shell. Instead of dealing with pesky encryption, just embed your commands into our quantum computer! I batched the next command in with yours, hope you're ok with that!")
+
+    given_sv, given_n = normalization("echo 'Hello, world!'")
+    print_given(given_sv, given_n)
+```
+The specific implemenetation of `normalization` and `print_given` aren't important yet, but just know that `normalization` returns a statevector and a normalization constant and `print_given` is just an extension of the welcome message.
+
+A [statevector](https://en.wikipedia.org/wiki/Quantum_state) is way to represent the possible states of a quantum system, and records the probabilities of every possible combination of qubit measurements. For example, the statevector of a single qubit at the start of a circuit is `[1, 0]`, since it will always record 0 when measured. A statevector that records `n` qubits requires `2^n` values.
+
+A key property of statevectors is that the sum of the squares of all values in the statevector must equal 1. This is called normalization, and the normalization constant is what the statevector is divided by to ensure it is normalized. 
+
+In this case, the statevector is 32 values long, and represents the 5 qubits used in the circuit. In the output of `print_given`, we can also see that the normalization constant is `419.1873089681986`.
 
