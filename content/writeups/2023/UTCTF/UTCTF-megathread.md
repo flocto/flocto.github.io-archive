@@ -1,7 +1,7 @@
 ---
 title: "UTCTF 2023 Megathread"
 date: 2023-03-13T12:58:02-05:00
-tags: ["crypto", "forensics", "misc", "networking", "reverse engineering", "web", "utctf", "2023"]
+tags: ["crypto", "forensics", "misc", "networking", "rev", "web", "utctf", "2023"]
 summary: Megathread for UTCTF 2023, contains mini writeups for most challenges
 ---
 
