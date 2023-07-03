@@ -23,6 +23,7 @@
         </div>
 
         <script>
+            // this script adds open/close functionality to code blocks
             function handle_open(e) {
                 let target = e.target;
                 if (e.target.tagName === "SUMMARY") {
@@ -82,6 +83,16 @@
             for (let el of to_remove) {
                 el.remove();
             }
+
+            // fixing anchor tags since I don't know how to use Hugo
+            let anchors = document.querySelectorAll(".postWrapper a");
+            for (let anchor of anchors){
+                if (anchor.host !== window.location.host) {
+                    anchor.setAttribute("target", "_blank");
+                    anchor.setAttribute("rel", "noopener noreferrer");
+                }
+            }
+
         </script>
 
 
