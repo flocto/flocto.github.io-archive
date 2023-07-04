@@ -994,7 +994,7 @@ rest = r.recvall().decode()
 print(rest)
 ```
 
-Sending this just prints `Hello, world!` as expected, since our circuit currently does nothing at all. Now, let's try and add a single gate to our circuit. We can use the [`.x()` function](https://qiskit.org/documentation/stubs/qiskit.circuit.QuantumCircuit.x.html#qiskit.circuit.QuantumCircuit.x) to add an `X` gate to our circuit, say on qubit 0:
+Sending this just prints `Hello, world!` as expected, since our circuit currently does nothing at all. Now, let's try and add a single gate to our circuit. We can use the [`.x()` function](https://qiskit.org/documentation/stubs/qiskit.circuit.QuantumCircuit.x.html#qiskit.circuit.QuantumCircuit.x) to add an $X$ gate to our circuit, say on qubit 0:
 ```python
 qc = QuantumCircuit(5)
 qc.x(0)
@@ -1016,7 +1016,7 @@ q_4: ┤4             ├┤4                      ├
 Invalid ASCII characters.
 ```
 
-Interesting... let's try a different gate. How about the [H gate](https://qiskit.org/documentation/stubs/qiskit.circuit.QuantumCircuit.h.html#qiskit.circuit.QuantumCircuit.h) this time?
+Interesting... let's try a different gate. How about the [$H$ gate](https://qiskit.org/documentation/stubs/qiskit.circuit.QuantumCircuit.h.html#qiskit.circuit.QuantumCircuit.h) this time?
 ```python
 qc = QuantumCircuit(5)
 qc.h(0)
