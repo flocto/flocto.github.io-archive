@@ -1240,7 +1240,7 @@ print(base)
  -1.01481323e-16+0.j -1.04083409e-17+0.j -5.89805982e-17+0.j
  -5.72458747e-17+0.j -4.51028104e-17+0.j]
 ```
-Yep, it returns the base statevector we found earlier as well (the other numbers are small enought to be considered 0). 
+Yep, it returns the base statevector we found earlier as well (the other numbers are small enough to be considered 0). 
 
 Now, since we know the matrix represention of the circuit, we can find a target statevector we want the final result to be, multiply by the inverse matrix, and we'll get the statevector we want to end up after our own circuit! Mathematically, we have:
 
