@@ -75,7 +75,7 @@ E15: Invalid expression: "uiuctf{ctr1_r_1s_h4ndy_277d0fde079f49d2}"
 Press ENTER or type command to continue
 ```
 
-# Vimjail 2 (and 2.5
+# Vimjail 2 (and 2.5)
 This time theres a bit more limitations. In addition to the previously banned keybinds, all of the following are replaced with `_`.
 
 ```text
