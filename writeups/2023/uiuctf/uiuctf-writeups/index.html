@@ -1,4 +1,4 @@
-<!doctype html><html lang=en-us><head><title>UIUCTF 2023 Writeups | flocto</title><meta charset=utf-8><meta name=viewport content="width=device-width,initial-scale=1"><meta name=generator content="Hugo 0.115.0"><link rel=canonical href=/writeups/2023/uiuctf-writeups/><link href=/sass/main.min.57d92008c47faccb486578aa238fe68bdeeb4a0b32c7f43a3dd381869319736d.css rel=stylesheet></head><body><div class=flexWrapper><header class=headerWrapper><div class=header><div><a href=/><span class=terminal>fl@cto ~ $</span></a></div><nav class=headerLinks><ul><li><a href=/about title>~/about</a></li><li><a href=/projects title>~/projects</a></li><li><a href=/writeups title>~/writeups</a></li><li><a href=/blog title>~/blog</a></li><li><a href=/ style=align-items:center;justify-content:center><img style=width:30px;height:30px;border-radius:15px;vertical-align:text-bottom src=/profile.png alt=Home></a></li></ul></nav></div></header><div class=content><main class=main><div class=postWrapper><h1>UIUCTF 2023 Writeups</h1><ul class=tagList><li class=tagItem><a class=tagLink href=/tags/2023/>2023</a></li><li class=tagItem><a class=tagLink href=/tags/misc/>misc</a></li><li class=tagItem><a class=tagLink href=/tags/rev/>rev</a></li><li class=tagItem><a class=tagLink href=/tags/uiuctf/>uiuctf</a></li></ul><div><p>Once again another banger CTF from SigPwny, including a cool theme that I completely avoided to solve challenges faster. 😂😂😂 <del><em>(jk the theme was actually cool tho)</em></del></p><p>Anyway, I ended up solving quite a few challenges in misc/rev, so here&rsquo;s writeups for both vimjails, <a href=#geoguessr->geoguessr</a>, <a href=#pwnykey>pwnykey</a>, and [Schrodinger&rsquo;s Cat](not done).</p><h1 id=vimjail-1-and-15>Vimjail 1 (and 1.5)</h1><p>BTW, as a disclaimer, these vimjail writeups cover a solution that solves both the original and the .5 updated version, and does not cover the cheese that was patched.</p><p>Anyway, starting with Vimjail 1, we&rsquo;re given this setup.</p><p>filename=vimrc</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-text data-lang=text><span style=display:flex><span>set nocompatible
+<!doctype html><html lang=en-us><head><title>UIUCTF 2023 Writeups | flocto</title><meta charset=utf-8><meta name=viewport content="width=device-width,initial-scale=1"><meta name=generator content="Hugo 0.115.1"><link rel=canonical href=/writeups/2023/uiuctf/uiuctf-writeups/><link href=/sass/main.min.57d92008c47faccb486578aa238fe68bdeeb4a0b32c7f43a3dd381869319736d.css rel=stylesheet></head><body><div class=flexWrapper><header class=headerWrapper><div class=header><div><a href=/><span class=terminal>fl@cto ~ $</span></a></div><nav class=headerLinks><ul><li><a href=/about title>~/about</a></li><li><a href=/projects title>~/projects</a></li><li><a href=/writeups title>~/writeups</a></li><li><a href=/blog title>~/blog</a></li><li><a href=/ style=align-items:center;justify-content:center><img style=width:30px;height:30px;border-radius:15px;vertical-align:text-bottom src=/profile.png alt=Home></a></li></ul></nav></div></header><div class=content><main class=main><div class=postWrapper><h1>UIUCTF 2023 Writeups</h1><ul class=tagList><li class=tagItem><a class=tagLink href=/tags/2023/>2023</a></li><li class=tagItem><a class=tagLink href=/tags/misc/>misc</a></li><li class=tagItem><a class=tagLink href=/tags/rev/>rev</a></li><li class=tagItem><a class=tagLink href=/tags/uiuctf/>uiuctf</a></li></ul><div><p>Once again another banger CTF from SigPwny, including a cool theme that I completely avoided to solve challenges faster. 😂😂😂 <del><em>(jk the theme was actually cool tho)</em></del></p><p>Anyway, I ended up solving quite a few challenges in misc/rev, so here&rsquo;s writeups for both vimjails, <a href=#geoguessr->geoguessr</a>, <a href=#pwnykey>pwnykey</a>, and [Schrodinger&rsquo;s Cat](not done).</p><h1 id=vimjail-1-and-15>Vimjail 1 (and 1.5)</h1><p>BTW, as a disclaimer, these vimjail writeups cover a solution that solves both the original and the .5 updated version, and does not cover the cheese that was patched.</p><p>Anyway, starting with Vimjail 1, we&rsquo;re given this setup.</p><p>filename=vimrc</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-text data-lang=text><span style=display:flex><span>set nocompatible
 </span></span><span style=display:flex><span>set insertmode
 </span></span><span style=display:flex><span>
 </span></span><span style=display:flex><span>inoremap &lt;c-o&gt; nope
@@ -358,7 +358,7 @@ proc inline_F12(par0, par1): @5156
  798:     CALL nextInt_F13()
  808:     loc2 := (loc2 + 1)
  821:     JMP 780
-</code></pre><p>Looking at <code>nextInt_F13</code>, we find what seems to be a basic <code>xorshift</code> PRNG, with a small addition as <code>G13</code> is used to modify the output:</p><pre tabindex=0><code>proc nextInt_F13(): @5164
+</code></pre><p>Looking at <code>nextInt_F13</code>, we find what seems to be a basic <a href=https://en.wikipedia.org/wiki/Xorshift#xorwow><code>xorwow</code></a> PRNG, with <code>G13</code> serving as the counter to modify the output:</p><pre tabindex=0><code>proc nextInt_F13(): @5164
   locals: loc0
    0:     CALL {G12}.&#34;pop&#34;()
   12:     loc0 := ret_val()
@@ -370,7 +370,7 @@ proc inline_F12(par0, par1): @5156
   86:     {G13} := (({G13} + 13371337) &amp; 4294967295
  106:     CALL {G12}.&#34;unshift&#34;(loc0)
  120:     RETURN (loc0 + {G13})
-</code></pre><p>This PRNG pops the last value of <code>G12</code>, does <code>xorshift</code> operations, then inserts it back into the start of <code>G12</code>. <code>G13</code> is increased by <code>13371337</code>, then added to the final output of the PRNG.</p><p>Going back to the main function, after the loop is run, an array is created and initialized with 3 calls to <code>nextInt_F13</code>, then compared with another array:</p><pre tabindex=0><code> 832:     ALLOC_ARRAY initial_size=3
+</code></pre><p>This PRNG pops the last value of <code>G12</code>, does <code>xorshift</code> operations, then inserts it back into the start of <code>G12</code>. Then, at the same time, <code>G13</code> is increased by <code>13371337</code>, and only added to the final output of the PRNG.</p><p>Going back to the main function, after the loop is run, an array is created and initialized with 3 calls to <code>nextInt_F13</code>, then compared with another array:</p><pre tabindex=0><code> 832:     ALLOC_ARRAY initial_size=3
  841:     loc0 := ret_val()
  851:     CALL nextInt_F13()
  861:     loc0[0] := ret_val()
@@ -394,7 +394,8 @@ proc inline_F12(par0, par1): @5156
 
 1058:     CALL ds.&#34;format&#34;(&#34;passed check3&#34;)
 1070:     CALL ds.&#34;print&#34;(62, ret_val())
-</code></pre><p>This means to pass this check, we need to somehow initialize <code>G12</code> with the proper state so that after 420 <code>nextInt</code> calls, we generate the exact integers <code>[2897974129, -549922559, -387684011]</code>.</p><p>Before we start trying to solve this, another thing to realize is that <code>G13</code> is actually independent from the rest of the PRNG, since it only affects the output, not what is added back to <code>G12</code>. So we can pre-calculate its effects and find an adjusted target like so:</p><p>filename=calc_g13.py</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-python data-lang=python><span style=display:flex><span><span style=color:#f92672>import</span> ctypes
+</code></pre><p>This means to pass this check, we need to somehow initialize <code>G12</code> with the proper state so that after 420 <code>nextInt</code> calls, we generate the exact integers <code>[2897974129, -549922559, -387684011]</code>.</p><p>Before we start trying to solve this, another thing to realize is that <code>G13</code>, the counter, can be solved seperately from the rest of the <code>xorwow</code> PRNG. Since we know the amount of times
+the PRNG is called, we can pre-calculate the value <code>G13</code> when it will be called the last 3 times, and just subtract them from the target values:</p><p>filename=calc_g13.py</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-python data-lang=python><span style=display:flex><span><span style=color:#f92672>import</span> ctypes
 </span></span><span style=display:flex><span>target <span style=color:#f92672>=</span> [<span style=color:#ae81ff>2897974129</span>, <span style=color:#f92672>-</span><span style=color:#ae81ff>549922559</span>, <span style=color:#f92672>-</span><span style=color:#ae81ff>387684011</span>]
 </span></span><span style=display:flex><span>g13 <span style=color:#f92672>=</span> <span style=color:#ae81ff>1337</span>
 </span></span><span style=display:flex><span><span style=color:#66d9ef>for</span> _ <span style=color:#f92672>in</span> range(<span style=color:#ae81ff>420</span>):
@@ -470,7 +471,108 @@ found! 14 11 22 2 27
 1106:     RETURN 0
 </code></pre><p>This means we can do anything for the last 5 digits, so of course, our key is now:
 <code>YANXA-G2G54-9DHZR-FBP2U-XDUWU</code></p><p>Passing this to the website, we&rsquo;re finally <em>finally</em> able to get our proper PwnyOS license! Oh, and the flag too</p><pre tabindex=0><code>uiuctf{abbe62185750af9c2e19e2f2}
-</code></pre></div></div></main></div><script>function handle_open(e){let t=e.target;e.target.tagName==="SUMMARY"&&(t=e.target.querySelector(".code-summary-inner")),t.classList.toggle("open"),t.classList.contains("open")?t.textContent="Click to collapse "+t.textContent.split(" ").slice(3).join(" "):t.textContent="Click to expand "+t.textContent.split(" ").slice(3).join(" ")}let code_divs=document.querySelectorAll("div.highlight"),to_remove=[];for(let e of code_divs){let t="",n=e.previousElementSibling;n.tagName=="P"&&(n=n.textContent,n.startsWith("filename")&&(t=n.split("=")[1].trim(),to_remove.push(e.previousElementSibling)));let s=e.querySelector("pre code"),o=s.textContent.split(`
+</code></pre><h1 id=schrödingers-cat>Schrödinger&rsquo;s Cat</h1><p>Finally, we&rsquo;re at the last challenge. This one is a bit different from the rest, and involves constructing a quantum circuit to solve a problem. Don&rsquo;t worry though, this writeup assumes no prior knowledge of quantum computing, and will explain everything you need to know.</p><p>First, let&rsquo;s take a look at the provided file:</p><p>filename=server.py</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-python data-lang=python><span style=display:flex><span><span style=color:#75715e>#!/usr/bin/env python3</span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#f92672>from</span> os <span style=color:#f92672>import</span> system
+</span></span><span style=display:flex><span><span style=color:#f92672>from</span> base64 <span style=color:#f92672>import</span> b64decode
+</span></span><span style=display:flex><span><span style=color:#f92672>import</span> numpy <span style=color:#66d9ef>as</span> np
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#f92672>from</span> qiskit <span style=color:#f92672>import</span> QuantumCircuit
+</span></span><span style=display:flex><span><span style=color:#f92672>import</span> qiskit.quantum_info <span style=color:#66d9ef>as</span> qi
+</span></span><span style=display:flex><span><span style=color:#f92672>from</span> qiskit.circuit.library <span style=color:#f92672>import</span> StatePreparation
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>WIRES <span style=color:#f92672>=</span> <span style=color:#ae81ff>5</span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#66d9ef>def</span> <span style=color:#a6e22e>normalization</span>(msg):
+</span></span><span style=display:flex><span>    <span style=color:#66d9ef>assert</span>(len(msg) <span style=color:#f92672>&lt;=</span> WIRES<span style=color:#f92672>**</span><span style=color:#ae81ff>2</span>)
+</span></span><span style=display:flex><span>    state <span style=color:#f92672>=</span> np<span style=color:#f92672>.</span>array([ord(c) <span style=color:#66d9ef>for</span> c <span style=color:#f92672>in</span> msg<span style=color:#f92672>.</span>ljust(<span style=color:#ae81ff>2</span><span style=color:#f92672>**</span>WIRES, <span style=color:#e6db74>&#39; &#39;</span>)])
+</span></span><span style=display:flex><span>    norm <span style=color:#f92672>=</span> np<span style=color:#f92672>.</span>linalg<span style=color:#f92672>.</span>norm(state)
+</span></span><span style=display:flex><span>    state <span style=color:#f92672>=</span> state <span style=color:#f92672>/</span> norm
+</span></span><span style=display:flex><span>    <span style=color:#66d9ef>return</span> (state, norm)
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#66d9ef>def</span> <span style=color:#a6e22e>transform</span>(sv, n):
+</span></span><span style=display:flex><span>    legal <span style=color:#f92672>=</span> <span style=color:#66d9ef>lambda</span> c: ord(<span style=color:#e6db74>&#39; &#39;</span>) <span style=color:#f92672>&lt;=</span> c <span style=color:#f92672>and</span> c <span style=color:#f92672>&lt;=</span> ord(<span style=color:#e6db74>&#39;~&#39;</span>)
+</span></span><span style=display:flex><span>    renormalized <span style=color:#f92672>=</span> [float(i<span style=color:#f92672>.</span>real)<span style=color:#f92672>*</span>n <span style=color:#66d9ef>for</span> i <span style=color:#f92672>in</span> sv]
+</span></span><span style=display:flex><span>    rn_rounded <span style=color:#f92672>=</span> [round(i) <span style=color:#66d9ef>for</span> i <span style=color:#f92672>in</span> renormalized]
+</span></span><span style=display:flex><span>    <span style=color:#66d9ef>if</span> <span style=color:#f92672>not</span> np<span style=color:#f92672>.</span>allclose(renormalized, rn_rounded, rtol<span style=color:#f92672>=</span><span style=color:#ae81ff>0</span>, atol<span style=color:#f92672>=</span><span style=color:#ae81ff>1e-2</span>):
+</span></span><span style=display:flex><span>        print(<span style=color:#e6db74>&#34;Your rehydrated statevector isn&#39;t very precise. Try adding at least 6 decimal places of precision, or contact the challenge author if you think this is a mistake.&#34;</span>)
+</span></span><span style=display:flex><span>        print(rn_rounded)
+</span></span><span style=display:flex><span>        exit(<span style=color:#ae81ff>0</span>)
+</span></span><span style=display:flex><span>    <span style=color:#66d9ef>if</span> np<span style=color:#f92672>.</span>any([<span style=color:#f92672>not</span> legal(c) <span style=color:#66d9ef>for</span> c <span style=color:#f92672>in</span> rn_rounded]):
+</span></span><span style=display:flex><span>        print(<span style=color:#e6db74>&#34;Invalid ASCII characters.&#34;</span>)
+</span></span><span style=display:flex><span>        exit(<span style=color:#ae81ff>0</span>)
+</span></span><span style=display:flex><span>    <span style=color:#66d9ef>return</span> <span style=color:#e6db74>&#39;&#39;</span><span style=color:#f92672>.</span>join([chr(n) <span style=color:#66d9ef>for</span> n <span style=color:#f92672>in</span> rn_rounded])
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#66d9ef>def</span> <span style=color:#a6e22e>make_circ</span>(sv, circ):
+</span></span><span style=display:flex><span>    qc <span style=color:#f92672>=</span> QuantumCircuit(WIRES)
+</span></span><span style=display:flex><span>    qc<span style=color:#f92672>.</span>append(circ<span style=color:#f92672>.</span>to_instruction(), range(WIRES))
+</span></span><span style=display:flex><span>    sp <span style=color:#f92672>=</span> QuantumCircuit(WIRES, name<span style=color:#f92672>=</span><span style=color:#e6db74>&#34;echo &#39;Hello, world!&#39;&#34;</span>)
+</span></span><span style=display:flex><span>    sp<span style=color:#f92672>.</span>append(StatePreparation(sv), range(WIRES))
+</span></span><span style=display:flex><span>    qc<span style=color:#f92672>.</span>append(sp<span style=color:#f92672>.</span>to_instruction(), range(WIRES))
+</span></span><span style=display:flex><span>    <span style=color:#66d9ef>return</span> qc
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#66d9ef>def</span> <span style=color:#a6e22e>print_given</span>(sv, n):
+</span></span><span style=display:flex><span>    placeholder <span style=color:#f92672>=</span> QuantumCircuit(WIRES, name<span style=color:#f92672>=</span><span style=color:#e6db74>&#34;Your Circ Here&#34;</span>)
+</span></span><span style=display:flex><span>    placeholder<span style=color:#f92672>.</span>i(<span style=color:#ae81ff>0</span>)
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>    circ <span style=color:#f92672>=</span> make_circ(sv, placeholder)
+</span></span><span style=display:flex><span>    print(circ<span style=color:#f92672>.</span>draw(style<span style=color:#f92672>=</span>{
+</span></span><span style=display:flex><span>        <span style=color:#e6db74>&#34;displaytext&#34;</span>: {
+</span></span><span style=display:flex><span>            <span style=color:#e6db74>&#34;state_preparation&#34;</span>: <span style=color:#e6db74>&#34;&lt;&gt;&#34;</span>
+</span></span><span style=display:flex><span>            }
+</span></span><span style=display:flex><span>        }))
+</span></span><span style=display:flex><span>    new_sv <span style=color:#f92672>=</span> qi<span style=color:#f92672>.</span>Statevector<span style=color:#f92672>.</span>from_instruction(circ)
+</span></span><span style=display:flex><span>    print(<span style=color:#e6db74>f</span><span style=color:#e6db74>&#39;Normalization constant: </span><span style=color:#e6db74>{</span>n<span style=color:#e6db74>}</span><span style=color:#e6db74>&#39;</span>)
+</span></span><span style=display:flex><span>    print(<span style=color:#e6db74>&#34;</span><span style=color:#ae81ff>\n</span><span style=color:#e6db74>Executing...</span><span style=color:#ae81ff>\n</span><span style=color:#e6db74>&#34;</span>)
+</span></span><span style=display:flex><span>    system(transform(new_sv, n))
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#66d9ef>def</span> <span style=color:#a6e22e>main</span>():
+</span></span><span style=display:flex><span>    print(<span style=color:#e6db74>&#34;Welcome to the Quantum Secure Shell. Instead of dealing with pesky encryption, just embed your commands into our quantum computer! I batched the next command in with yours, hope you&#39;re ok with that!&#34;</span>)
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>    given_sv, given_n <span style=color:#f92672>=</span> normalization(<span style=color:#e6db74>&#34;echo &#39;Hello, world!&#39;&#34;</span>)
+</span></span><span style=display:flex><span>    print_given(given_sv, given_n)
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>    <span style=color:#66d9ef>try</span>:
+</span></span><span style=display:flex><span>        qasm_str <span style=color:#f92672>=</span> b64decode(input(<span style=color:#e6db74>&#34;</span><span style=color:#ae81ff>\n</span><span style=color:#e6db74>Please type your OpenQASM circuit as a base64 encoded string: &#34;</span>))<span style=color:#f92672>.</span>decode()
+</span></span><span style=display:flex><span>    <span style=color:#66d9ef>except</span>:
+</span></span><span style=display:flex><span>        print(<span style=color:#e6db74>&#34;Error decoding b64!&#34;</span>)
+</span></span><span style=display:flex><span>        exit(<span style=color:#ae81ff>0</span>)
+</span></span><span style=display:flex><span>    <span style=color:#66d9ef>try</span>:
+</span></span><span style=display:flex><span>        circ <span style=color:#f92672>=</span> QuantumCircuit<span style=color:#f92672>.</span>from_qasm_str(qasm_str)
+</span></span><span style=display:flex><span>        circ<span style=color:#f92672>.</span>remove_final_measurements(inplace<span style=color:#f92672>=</span><span style=color:#66d9ef>True</span>)
+</span></span><span style=display:flex><span>    <span style=color:#66d9ef>except</span>:
+</span></span><span style=display:flex><span>        print(<span style=color:#e6db74>&#34;Error processing OpenQASM file! Try decomposing your circuit into basis gates using `transpile`.&#34;</span>)
+</span></span><span style=display:flex><span>        exit(<span style=color:#ae81ff>0</span>)
+</span></span><span style=display:flex><span>    <span style=color:#66d9ef>if</span> circ<span style=color:#f92672>.</span>num_qubits <span style=color:#f92672>!=</span> WIRES:
+</span></span><span style=display:flex><span>        print(<span style=color:#e6db74>f</span><span style=color:#e6db74>&#34;Your quantum circuit acts on </span><span style=color:#e6db74>{</span>circ<span style=color:#f92672>.</span>num_qubits<span style=color:#e6db74>}</span><span style=color:#e6db74> instead of </span><span style=color:#e6db74>{</span>WIRES<span style=color:#e6db74>}</span><span style=color:#e6db74> qubits!&#34;</span>)
+</span></span><span style=display:flex><span>        exit(<span style=color:#ae81ff>0</span>)
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>    <span style=color:#66d9ef>try</span>:
+</span></span><span style=display:flex><span>        norm <span style=color:#f92672>=</span> float(input(<span style=color:#e6db74>&#34;Please enter your normalization constant (precision matters!): &#34;</span>))
+</span></span><span style=display:flex><span>    <span style=color:#66d9ef>except</span>:
+</span></span><span style=display:flex><span>        print(<span style=color:#e6db74>&#34;Error processing normalization constant!&#34;</span>)
+</span></span><span style=display:flex><span>        exit(<span style=color:#ae81ff>0</span>)
+</span></span><span style=display:flex><span>    <span style=color:#66d9ef>try</span>:
+</span></span><span style=display:flex><span>        sv_circ <span style=color:#f92672>=</span> make_circ(given_sv, circ)
+</span></span><span style=display:flex><span>    <span style=color:#66d9ef>except</span>:
+</span></span><span style=display:flex><span>        print(<span style=color:#e6db74>&#34;Circuit runtime error!&#34;</span>)
+</span></span><span style=display:flex><span>        exit(<span style=color:#ae81ff>0</span>)
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>    print(sv_circ<span style=color:#f92672>.</span>draw())
+</span></span><span style=display:flex><span>    command <span style=color:#f92672>=</span> transform(qi<span style=color:#f92672>.</span>Statevector<span style=color:#f92672>.</span>from_instruction(sv_circ), norm)
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>    print(<span style=color:#e6db74>&#34;</span><span style=color:#ae81ff>\n</span><span style=color:#e6db74>Executing...</span><span style=color:#ae81ff>\n</span><span style=color:#e6db74>&#34;</span>)
+</span></span><span style=display:flex><span>    system(command)
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#66d9ef>if</span> __name__ <span style=color:#f92672>==</span> <span style=color:#e6db74>&#34;__main__&#34;</span>:
+</span></span><span style=display:flex><span>    main()
+</span></span></code></pre></div><p>It might look like a lot, so I&rsquo;ll break it down step by step.</p><p>First, the server prints a welcome message, then executes its built-in quantum circuit and prints out its result:</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-python data-lang=python><span style=display:flex><span><span style=color:#66d9ef>def</span> <span style=color:#a6e22e>main</span>():
+</span></span><span style=display:flex><span>    print(<span style=color:#e6db74>&#34;Welcome to the Quantum Secure Shell. Instead of dealing with pesky encryption, just embed your commands into our quantum computer! I batched the next command in with yours, hope you&#39;re ok with that!&#34;</span>)
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>    given_sv, given_n <span style=color:#f92672>=</span> normalization(<span style=color:#e6db74>&#34;echo &#39;Hello, world!&#39;&#34;</span>)
+</span></span><span style=display:flex><span>    print_given(given_sv, given_n)
+</span></span></code></pre></div><p>The specific implemenetation of <code>normalization</code> and <code>print_given</code> aren&rsquo;t important yet, but just know that <code>normalization</code> returns a statevector and a normalization constant and <code>print_given</code> is just an extension of the welcome message.</p><p>A <a href=https://en.wikipedia.org/wiki/Quantum_state>statevector</a> is way to represent the possible states of a quantum system, and records the probabilities of every possible combination of qubit measurements. For example, the statevector of a single qubit at the start of a circuit is <code>[1, 0]</code>, since it will always record 0 when measured. A statevector that records <code>n</code> qubits requires <code>2^n</code> values.</p><p>A key property of statevectors is that the sum of the squares of all values in the statevector must equal 1. This is called normalization, and the normalization constant is what the statevector is divided by to ensure it is normalized.</p><p>In this case, the statevector is 32 values long, and represents the 5 qubits used in the circuit. In the output of <code>print_given</code>, we can also see that the normalization constant is <code>419.1873089681986</code>.</p></div></div></main></div><script>function handle_open(e){let t=e.target;e.target.tagName==="SUMMARY"&&(t=e.target.querySelector(".code-summary-inner")),t.classList.toggle("open"),t.classList.contains("open")?t.textContent="Click to collapse "+t.textContent.split(" ").slice(3).join(" "):t.textContent="Click to expand "+t.textContent.split(" ").slice(3).join(" ")}let code_divs=document.querySelectorAll("div.highlight"),to_remove=[];for(let e of code_divs){let t="",n=e.previousElementSibling;n.tagName=="P"&&(n=n.textContent,n.startsWith("filename")&&(t=n.split("=")[1].trim(),to_remove.push(e.previousElementSibling)));let s=e.querySelector("pre code"),o=s.textContent.split(`
 `).length;if(t!==""||o>10){let n=document.createElement("details"),o=document.createElement("summary"),i=document.createElement("span");i.textContent="Click to expand",t!==""&&(i.textContent+=" "+t,n.setAttribute("id",t)),i.classList.add("code-summary-inner"),o.appendChild(i),o.addEventListener("click",handle_open),o.classList.add("code-summary"),s.classList.add("code-inner"),e.parentNode.insertBefore(n,e),n.appendChild(o),n.appendChild(e),n.classList.add("code-wrapper")}}for(let e of to_remove)e.remove();let anchors=document.querySelectorAll(".postWrapper a");for(let e of anchors)e.host!==window.location.host&&(e.setAttribute("target","_blank"),e.setAttribute("rel","noopener noreferrer"))</script><footer class=footer>© 2023 flocto, Built with
 <a href=https://gohugo.io class=footerLink>Hugo</a> and (an edited)
 <a href=https://github.com/LordMathis/hugo-theme-nightfall class=footerLink>Nightfall</a> theme</footer></div></body></html>
