@@ -84,7 +84,7 @@
                 el.remove();
             }
 
-            // fixing anchor tags since I don't know how to use Hugo
+            // external links open in new tab
             let anchors = document.querySelectorAll(".postWrapper a");
             for (let anchor of anchors){
                 if (anchor.host !== window.location.host) {
@@ -93,6 +93,16 @@
                 }
             }
 
+            // headers become links
+            let headers = document.querySelectorAll(".postWrapper div h1, .postWrapper div h2, .postWrapper div h3, .postWrapper div h4, .postWrappe div h5, .postWrapper div h6");
+            for (let header of headers) {
+                let id = header.getAttribute("id");
+                let link = document.createElement("a");
+                link.setAttribute("href", "#" + id);
+                link.classList.add("header-link");
+                link.textContent = "#";
+                header.append(link);
+            }
         </script>
 
 

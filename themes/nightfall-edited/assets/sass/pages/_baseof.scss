@@ -1,5 +1,9 @@
 @import "../utils/variables";
 
+* {
+  scroll-behavior: smooth;
+}
+
 .content {
   text-align: center;
   margin: 0 auto;
@@ -39,12 +43,12 @@
   border-radius: 5px;
   padding: 10px;
   background-color: $backgroundDarker;
-  -webkit-touch-callout: none; 
-    -webkit-user-select: none; 
-     -khtml-user-select: none;
-       -moz-user-select: none; 
-        -ms-user-select: none; 
-            user-select: none; 
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  -khtml-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
   border-bottom: 3px solid $orange;
   transition: all 0.15s ease-in-out;
 }
@@ -56,4 +60,21 @@
 
 .code-inner {
   border-radius: 5px;
+}
+
+@for $i from 1 through 6 {
+
+  .postWrapper div h#{$i} .header-link {
+    opacity: 0;
+    transition: all 0.15s ease-in-out;
+    color: $white;
+    margin: 0;
+    padding: 0;
+    position: relative;
+    left: 15px;
+  }
+
+  .postWrapper div h#{$i}:hover .header-link {
+    opacity: 1;
+  }
 }
