@@ -1155,9 +1155,9 @@ $$
 X|0\rangle = \begin{bmatrix} 0 & 1 \\\\ 1 & 0 \end{bmatrix} \begin{bmatrix} 1 \\\\ 0 \end{bmatrix} = \begin{bmatrix} 0 \\\\ 1 \end{bmatrix} = |1\rangle
 $$
 
-Now, because these matrices are unitary, we can easily find their inverse, and create an inverse gate that does the exact opposite of the original gate. This is actually one of the key properties of quantum circuits, in that their are always reversible, as long as they do not collapse any qubits.
+Now, because these matrices are unitary, we can easily find their inverse, and create an inverse gate that does the exact opposite of the original gate. This is actually one of the key properties of quantum circuits, in that they are always reversible, as long as they do not collapse or measure any qubits.
 
-In addition, multiple gates together just combine into one larger matrix, as matrix multiplication is already a very well defined thing. This means we can take the server's given circuit, and find its matrix representation very easily using [`qiskit.quantum_info.Operator`](https://qiskit.org/documentation/stubs/qiskit.quantum_info.Operator.html):
+In addition, multiple gates together just combine into one larger matrix, usually through tensor products. This means we can find a matrix representation of the server's given circuit, as it should be composed of smaller individual logic gates. Checking the docs, we see that we can get its matrix representation very easily using [`qiskit.quantum_info.Operator`](https://qiskit.org/documentation/stubs/qiskit.quantum_info.Operator.html):
 
 ```python
 server_sv, server_n = normalization("echo 'Hello, world!'") 
