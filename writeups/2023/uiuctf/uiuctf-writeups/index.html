@@ -275,7 +275,7 @@ proc inline_F8(par0): @4924
 proc inline_F14(par0): @5292
    0:     CALL &#34;0123456789ABCDFGHJKLMNPQRSTUWXYZ&#34;.&#34;includes&#34;(par0)
   14:     RETURN !ret_val()
-</code></pre><p>Following the logic, we see that each splits each segment again into individual letters, then checks to see if the letters are in <code>0123456789ABCDFGHJKLMNPQRSTUWXYZ</code>. If any are not, it throws an error.</p><p>The next part calls <code>inline_F9</code> on each segment, which then calls <code>inline_F15</code> on each letter in each segment. <code>inline_F15</code> just returns the index of the letter in the previously established alphabet, so this entire process just maps all the letters to their respective indices:</p><pre tabindex=0><code> 326:     CALL {G5}.&#34;map&#34;(CLOSURE(inline_F9))
+</code></pre><p>Following the logic, we see that each segment is split again into individual letters, then checked to see if the letters are all in the alphabet <code>0123456789ABCDFGHJKLMNPQRSTUWXYZ</code>. If any are not, it throws an error.</p><p>The next part calls <code>inline_F9</code> on each segment, which then calls <code>inline_F15</code> on each letter in each segment. <code>inline_F15</code> just returns the index of the letter in the previously established alphabet, so this entire process just maps all the letters to their respective indices:</p><pre tabindex=0><code> 326:     CALL {G5}.&#34;map&#34;(CLOSURE(inline_F9))
 ...
 proc inline_F9(par0): @4956
    0:     CALL par0.&#34;split&#34;(&#34;&#34;)
