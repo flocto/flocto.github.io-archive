@@ -445,7 +445,7 @@ proc inline_F14(par0): @5292
    0:     CALL "0123456789ABCDFGHJKLMNPQRSTUWXYZ"."includes"(par0)
   14:     RETURN !ret_val()
 ```
-Following the logic, we see that each splits each segment again into individual letters, then checks to see if the letters are in `0123456789ABCDFGHJKLMNPQRSTUWXYZ`. If any are not, it throws an error.
+Following the logic, we see that each segment is split again into individual letters, then checked to see if the letters are all in the alphabet `0123456789ABCDFGHJKLMNPQRSTUWXYZ`. If any are not, it throws an error.
 
 The next part calls `inline_F9` on each segment, which then calls `inline_F15` on each letter in each segment. `inline_F15` just returns the index of the letter in the previously established alphabet, so this entire process just maps all the letters to their respective indices:
 ```
