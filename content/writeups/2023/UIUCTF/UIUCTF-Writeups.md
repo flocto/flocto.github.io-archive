@@ -1242,15 +1242,17 @@ print(base)
 ```
 Yep, it returns the base statevector we found earlier as well (the other numbers are small enough to be considered 0). 
 
-Now, since we know the matrix represention of the circuit, we can find a target statevector we want the final result to be, multiply by the inverse matrix, and we'll get the statevector we want to end up after our own circuit! Mathematically, we have:
+Now, since we know the matrix represention of the circuit, we can find a target statevector we want the final result to be, multiply by the inverse matrix, and we'll get the statevector that we want our circuit to result in, $X$! Mathematically, we have:
 
 $$
 \begin{align}
 T &= \text{target statevector} \\\\
 M &= \text{matrix representation of the circuit} \\\\
-X &= \text{unknown original statevector} \\\\
+X &= \text{unknown original statevector (what we are solving for)} \\\\
 \\newline
 MX &= T \\\\
+M^{-1}MX &= M^{-1}T \\\\
+IX &= M^{-1}T \\\\
 X &= M^{-1} T
 \end{align}
 $$
@@ -1584,5 +1586,7 @@ IT &= X \ \ \text{(since } M^{-1}M = I\text{)}\\\\
 X &= T
 \end{align}
 $$
+
+This method is a bit different since instead of modifying $X$ to become $T$ like I did in my original solution, we modify our entire circuit to cancel out $M$ while still creating X beforehand (but as you can see the math results in the same statevector).
 
 Anyway, I hope you had as much fun reading these writeups as I did originally solving these challenges :)
