@@ -32,6 +32,10 @@ a:visited:hover {
   color: $lightwhite;
 }
 
+code { 
+  font-size: large;
+}
+
 pre code {
   font-family: $fontCode;
   font-size: 95%;
