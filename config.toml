@@ -3,6 +3,22 @@ languageCode = 'en-us'
 title = 'ffffffflocto'
 theme = "nightfall-edited" 
 enableEmoji=true
+[markup]
+    [markup.highlight]
+        anchorLineNos = false
+        codeFences = true
+        guessSyntax = false
+        hl_Lines = ''
+        hl_inline = false
+        lineAnchors = ''
+        lineNoStart = 1
+        lineNos = true
+        lineNumbersInTable = true
+        noClasses = true
+        noHl = false
+        style = 'doom-one'
+        tabWidth = 4
+
 [params]
     author = "flocto"
     user = "fl"
@@ -21,19 +37,19 @@ enableEmoji=true
         url = "mailto:flocto@duck.com"
 
 [menu]
-  [[menu.header]]
-    name = "about"
-    weight = 1
-    url = "/about"
-  [[menu.header]]
-    name = "projects"
-    weight = 2
-    url = "/projects"
-  [[menu.header]]
-    name = "writeups"
-    weight = 2
-    url = "/writeups"
-  [[menu.header]]
-    name = "blog"
-    weight = 0
-    url = "/blog"
+    [[menu.header]]
+        name = "about"
+        weight = 1
+        url = "/about"
+    [[menu.header]]
+        name = "projects"
+        weight = 2
+        url = "/projects"
+    [[menu.header]]
+        name = "writeups"
+        weight = 2
+        url = "/writeups"
+    [[menu.header]]
+        name = "blog"
+        weight = 0
+        url = "/blog"

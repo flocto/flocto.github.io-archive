@@ -32,6 +32,10 @@ a:visited:hover {
   color: $lightwhite;
 }
 
+table > tbody > tr > td > pre {
+  margin: 0;
+}
+
 code { 
   font-size: large;
 }
@@ -46,20 +50,20 @@ pre code {
   color: $lightwhite;
 }
 
-code::-webkit-scrollbar {
+.highlight > div > table::-webkit-scrollbar {
   height: 12px;
 }
 
-code::-webkit-scrollbar-track {
+.highlight > div > table::-webkit-scrollbar-track {
   background-color: $backgroundDark;
 }
 
-code::-webkit-scrollbar-thumb {
+.highlight > div > table::-webkit-scrollbar-thumb {
   background-color: $backgroundLighter;
   border-radius: 2px;
 }
 
-code::-webkit-scrollbar-thumb:hover {
+.highlight > div > table::-webkit-scrollbar-thumb:hover {
   background-color: $backgroundLightest;
 }
 
