@@ -1,0 +1,439 @@
+<!doctype html><html lang=en-us><head><title>Updates and Teaser | flocto
+</title><meta charset=utf-8><meta name=viewport content="width=device-width,initial-scale=1"><meta name=generator content="Hugo 0.120.4"><link rel=canonical href=/blog/2023/update-teaser/><link href=/sass/main.min.678841d891b0415c3b0c556212e6e4c3789547455c5d005f7325a28f8e54740a.css rel=stylesheet></head><body><div class=flexWrapper><header class=headerWrapper><div class=header><div><a href=/><span class=terminal>fl@cto ~ $</span></a></div><nav class=headerLinks><ul><li><a href=/about title>~/about</a></li><li><a href=/projects title>~/projects</a></li><li><a href=/writeups title>~/writeups</a></li><li><a href=/blog title>~/blog</a></li><li><a href=/ style=align-items:center;justify-content:center><img style=width:30px;height:30px;border-radius:15px;vertical-align:text-bottom src=/profile.png alt=Home></a></li></ul></nav></div></header><div class=content><main class=main><div class=postWrapper><h1>Updates and Teaser</h1><ul class=tagList><li class=tagItem><a class=tagLink href=/tags/2023/>2023</a></li><li class=tagItem><a class=tagLink href=/tags/updates/>updates</a></li></ul><div><p>It&rsquo;s been quite a while since I&rsquo;ve posted here, I hope everyone is doing well.</p><p>Been busy with school ever since it started, so I haven&rsquo;t had much time to make decent writeups. Thankfully,
+with exams on the horizon, I&rsquo;ll finally have time to write some posts.</p><p>Anyway, first things first, I think I&rsquo;ll be moving away from Hugo in the upcoming months. I&rsquo;ve been looking at <a href=https://www.11ty.dev/>eleventy</a> recently and it looks pretty promising. Hopefully the shift doesn&rsquo;t break too many of my old posts, but if they do just know I won&rsquo;t be fixing them. <del>cuz im lazy</del></p><p>In terms of cybersecurity, I finally got a job! Hooray. Still looking for something for the summer but at least I get some working experience.</p><p>As for CTFs, I&rsquo;ve been doing them like normal. Unfortunately I&rsquo;ll probably never be able to go back and make writeups for most of them, but some fun ones I did recently include UDCTF, LakeCTF Quals, and HITCON.</p><p>At HITCON, we managed to qualify for the finals and got 2nd place! Really fun CTF even if I didn&rsquo;t mess with too much of the A/D side (was farming koth xd).</p><p>I also qualified and went to CSAW Finals, but unfortunately I spent my entire time tunnel-visioned on one challenge so I didn&rsquo;t do too well. Still pretty fun, and the food in NYC was great. (Unfortunately I did lose my phone on the way back, but that&rsquo;s a story for another time.)</p><p>With those updates out of the way, let&rsquo;s get to the teaser.</p><h2 id=teaser>Teaser</h2><p>In the upcoming months with the transition to eleventy, I also plan on making a series of blog posts where I dive into different programming languages and discuss their features, mainly discussing how I would approach reversing them for CTFs.
+Note that my advice may not be the best, but this is mainly more for me to force myself to learn these languages rather than as an actual guide.</p><p>As a teaser for the first post, if you played in HITCON Finals recently, you may recall the KOTH challenge <code>expansion</code>, where you were given 5 different &ldquo;binaries&rdquo; all compiled with ELVM. I&rsquo;ll be going over one of the esolangs from that challenge, Befunge, so as a gift here&rsquo;s a basic (and possibly slightly broken) interpreter that I&rsquo;ve written.</p><p>filename=befunge.py</p><div class=highlight><div style=color:#b0c4de;background-color:#282c34;-moz-tab-size:4;-o-tab-size:4;tab-size:4><table style=border-spacing:0;padding:0;margin:0;border:0><tr><td style=vertical-align:top;padding:0;margin:0;border:0><pre tabindex=0 style=color:#b0c4de;background-color:#282c34;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#58626f">  1
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#58626f">  2
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#58626f">  3
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#58626f">  4
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#58626f">  5
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#58626f">  6
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#58626f">  7
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#58626f">  8
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#58626f">  9
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#58626f"> 10
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#58626f"> 11
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#58626f"> 12
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#58626f"> 13
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#58626f"> 14
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#58626f"> 15
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#58626f"> 16
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#58626f"> 17
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#58626f"> 18
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#58626f"> 19
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#58626f"> 20
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#58626f"> 21
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#58626f"> 22
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#58626f"> 23
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#58626f"> 24
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#58626f"> 25
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#58626f"> 26
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#58626f"> 27
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#58626f"> 28
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#58626f"> 29
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#58626f"> 30
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#58626f"> 31
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#58626f"> 32
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#58626f"> 33
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#58626f"> 34
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#58626f"> 35
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#58626f"> 36
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#58626f"> 37
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#58626f"> 38
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#58626f"> 39
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#58626f"> 40
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#58626f"> 41
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#58626f"> 42
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#58626f"> 43
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#58626f"> 44
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#58626f"> 45
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#58626f"> 46
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#58626f"> 47
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#58626f"> 48
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#58626f"> 49
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#58626f"> 50
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#58626f"> 51
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#58626f"> 52
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#58626f"> 53
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#58626f"> 54
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#58626f"> 55
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#58626f"> 56
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#58626f"> 57
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#58626f"> 58
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#58626f"> 59
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#58626f"> 60
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#58626f"> 61
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#58626f"> 62
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#58626f"> 63
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#58626f"> 64
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#58626f"> 65
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#58626f"> 66
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#58626f"> 67
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#58626f"> 68
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#58626f"> 69
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#58626f"> 70
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#58626f"> 71
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#58626f"> 72
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#58626f"> 73
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#58626f"> 74
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#58626f"> 75
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#58626f"> 76
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#58626f"> 77
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#58626f"> 78
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#58626f"> 79
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#58626f"> 80
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#58626f"> 81
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#58626f"> 82
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#58626f"> 83
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#58626f"> 84
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#58626f"> 85
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#58626f"> 86
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#58626f"> 87
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#58626f"> 88
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#58626f"> 89
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#58626f"> 90
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#58626f"> 91
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#58626f"> 92
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#58626f"> 93
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#58626f"> 94
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#58626f"> 95
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#58626f"> 96
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#58626f"> 97
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#58626f"> 98
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#58626f"> 99
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#58626f">100
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#58626f">101
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#58626f">102
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#58626f">103
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#58626f">104
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#58626f">105
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#58626f">106
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#58626f">107
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#58626f">108
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#58626f">109
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#58626f">110
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#58626f">111
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#58626f">112
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#58626f">113
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#58626f">114
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#58626f">115
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#58626f">116
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#58626f">117
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#58626f">118
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#58626f">119
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#58626f">120
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#58626f">121
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#58626f">122
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#58626f">123
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#58626f">124
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#58626f">125
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#58626f">126
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#58626f">127
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#58626f">128
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#58626f">129
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#58626f">130
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#58626f">131
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#58626f">132
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#58626f">133
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#58626f">134
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#58626f">135
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#58626f">136
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#58626f">137
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#58626f">138
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#58626f">139
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#58626f">140
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#58626f">141
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#58626f">142
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#58626f">143
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#58626f">144
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#58626f">145
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#58626f">146
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#58626f">147
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#58626f">148
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#58626f">149
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#58626f">150
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#58626f">151
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#58626f">152
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#58626f">153
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#58626f">154
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#58626f">155
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#58626f">156
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#58626f">157
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#58626f">158
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#58626f">159
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#58626f">160
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#58626f">161
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#58626f">162
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#58626f">163
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#58626f">164
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#58626f">165
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#58626f">166
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#58626f">167
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#58626f">168
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#58626f">169
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#58626f">170
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#58626f">171
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#58626f">172
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#58626f">173
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#58626f">174
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#58626f">175
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#58626f">176
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#58626f">177
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#58626f">178
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#58626f">179
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#58626f">180
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#58626f">181
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#58626f">182
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#58626f">183
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#58626f">184
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#58626f">185
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#58626f">186
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#58626f">187
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#58626f">188
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#58626f">189
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#58626f">190
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#58626f">191
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#58626f">192
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#58626f">193
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#58626f">194
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#58626f">195
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#58626f">196
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#58626f">197
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#58626f">198
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#58626f">199
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#58626f">200
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#58626f">201
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#58626f">202
+</span></code></pre></td><td style=vertical-align:top;padding:0;margin:0;border:0;width:100%><pre tabindex=0 style=color:#b0c4de;background-color:#282c34;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-python data-lang=python><span style=display:flex><span><span style=color:#c678dd>from</span> <span style=color:#76a9f9>random</span> <span style=color:#c678dd>import</span> <span style=color:#c1abea>randint</span>
+</span></span><span style=display:flex><span><span style=color:#c678dd>import</span> <span style=color:#76a9f9>os.path</span>
+</span></span><span style=display:flex><span><span style=color:#c678dd>import</span> <span style=color:#76a9f9>sys</span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#c678dd>class</span> <span style=color:#76a9f9>BefungeGrid</span>:
+</span></span><span style=display:flex><span>    <span style=color:#c1abea>grid</span> <span style=color:#c7bf54>=</span> {}
+</span></span><span style=display:flex><span>    <span style=color:#c678dd>def</span> <span style=color:#c1abea>__init__</span>(<span style=color:#c1abea>self</span>):
+</span></span><span style=display:flex><span>        <span style=color:#c1abea>self</span><span style=color:#c7bf54>.</span><span style=color:#c1abea>grid</span> <span style=color:#c7bf54>=</span> {}
+</span></span><span style=display:flex><span>        <span style=color:#c1abea>self</span><span style=color:#c7bf54>.</span><span style=color:#c1abea>row_bound</span> <span style=color:#c7bf54>=</span> <span style=color:#d19a66>0</span>
+</span></span><span style=display:flex><span>        <span style=color:#c1abea>self</span><span style=color:#c7bf54>.</span><span style=color:#c1abea>col_bound</span> <span style=color:#c7bf54>=</span> <span style=color:#d19a66>0</span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>    <span style=color:#c678dd>def</span> <span style=color:#c1abea>__getitem__</span>(<span style=color:#c1abea>self</span>, <span style=color:#c1abea>key</span>):
+</span></span><span style=display:flex><span>        <span style=color:#c678dd>if</span> <span style=color:#ef8383>type</span>(<span style=color:#c1abea>key</span>) <span style=color:#c7bf54>==</span> <span style=color:#ef8383>tuple</span>:
+</span></span><span style=display:flex><span>            <span style=color:#8a93a5;font-style:italic># parse as row, col</span>
+</span></span><span style=display:flex><span>            <span style=color:#c678dd>return</span> <span style=color:#c1abea>self</span><span style=color:#c7bf54>.</span><span style=color:#c1abea>grid</span><span style=color:#c7bf54>.</span><span style=color:#c1abea>get</span>(<span style=color:#c1abea>key</span>[<span style=color:#d19a66>0</span>], {})<span style=color:#c7bf54>.</span><span style=color:#c1abea>get</span>(<span style=color:#c1abea>key</span>[<span style=color:#d19a66>1</span>], <span style=color:#63c381>&#34; &#34;</span>)
+</span></span><span style=display:flex><span>        
+</span></span><span style=display:flex><span>        <span style=color:#c678dd>return</span> <span style=color:#c1abea>self</span><span style=color:#c7bf54>.</span><span style=color:#c1abea>grid</span><span style=color:#c7bf54>.</span><span style=color:#c1abea>get</span>(<span style=color:#c1abea>key</span>, {}) <span style=color:#8a93a5;font-style:italic># ? may be incomplete row, due to being sparse</span>
+</span></span><span style=display:flex><span>    
+</span></span><span style=display:flex><span>    <span style=color:#c678dd>def</span> <span style=color:#c1abea>__setitem__</span>(<span style=color:#c1abea>self</span>, <span style=color:#c1abea>key</span>, <span style=color:#c1abea>value</span>):
+</span></span><span style=display:flex><span>        <span style=color:#c678dd>if</span> <span style=color:#ef8383>type</span>(<span style=color:#c1abea>key</span>) <span style=color:#c7bf54>==</span> <span style=color:#ef8383>tuple</span>:
+</span></span><span style=display:flex><span>            <span style=color:#8a93a5;font-style:italic># parse as row, col</span>
+</span></span><span style=display:flex><span>            <span style=color:#c1abea>self</span><span style=color:#c7bf54>.</span><span style=color:#c1abea>grid</span><span style=color:#c7bf54>.</span><span style=color:#c1abea>setdefault</span>(<span style=color:#c1abea>key</span>[<span style=color:#d19a66>0</span>], {})[<span style=color:#c1abea>key</span>[<span style=color:#d19a66>1</span>]] <span style=color:#c7bf54>=</span> <span style=color:#c1abea>value</span>
+</span></span><span style=display:flex><span>        <span style=color:#c678dd>else</span>:
+</span></span><span style=display:flex><span>            <span style=color:#c1abea>self</span><span style=color:#c7bf54>.</span><span style=color:#c1abea>grid</span>[<span style=color:#c1abea>key</span>] <span style=color:#c7bf54>=</span> <span style=color:#c1abea>value</span>
+</span></span><span style=display:flex><span>    
+</span></span><span style=display:flex><span>    <span style=color:#c678dd>def</span> <span style=color:#00b1f7>read_file</span>(<span style=color:#c1abea>self</span>, <span style=color:#c1abea>filename</span>):
+</span></span><span style=display:flex><span>        <span style=color:#c1abea>data</span> <span style=color:#c7bf54>=</span> <span style=color:#ef8383>open</span>(<span style=color:#c1abea>filename</span>)<span style=color:#c7bf54>.</span><span style=color:#c1abea>readlines</span>()
+</span></span><span style=display:flex><span>        <span style=color:#c1abea>self</span><span style=color:#c7bf54>.</span><span style=color:#c1abea>col_bound</span> <span style=color:#c7bf54>=</span> <span style=color:#ef8383>len</span>(<span style=color:#c1abea>data</span>)
+</span></span><span style=display:flex><span>        <span style=color:#c678dd>for</span> <span style=color:#c1abea>row</span>, <span style=color:#c1abea>line</span> <span style=color:#b756ff;font-weight:700>in</span> <span style=color:#ef8383>enumerate</span>(<span style=color:#c1abea>data</span>):
+</span></span><span style=display:flex><span>            <span style=color:#c1abea>line</span> <span style=color:#c7bf54>=</span> <span style=color:#c1abea>line</span><span style=color:#c7bf54>.</span><span style=color:#c1abea>strip</span>(<span style=color:#98c379>&#39;</span><span style=color:#d26464;font-weight:700>\n</span><span style=color:#98c379>&#39;</span>) <span style=color:#8a93a5;font-style:italic># remove trailing newline</span>
+</span></span><span style=display:flex><span>            <span style=color:#c1abea>self</span><span style=color:#c7bf54>.</span><span style=color:#c1abea>row_bound</span> <span style=color:#c7bf54>=</span> <span style=color:#ef8383>max</span>(<span style=color:#c1abea>self</span><span style=color:#c7bf54>.</span><span style=color:#c1abea>row_bound</span>, <span style=color:#ef8383>len</span>(<span style=color:#c1abea>line</span>))
+</span></span><span style=display:flex><span>            <span style=color:#c678dd>for</span> <span style=color:#c1abea>col</span>, <span style=color:#c1abea>char</span> <span style=color:#b756ff;font-weight:700>in</span> <span style=color:#ef8383>enumerate</span>(<span style=color:#c1abea>line</span>):
+</span></span><span style=display:flex><span>                <span style=color:#c678dd>if</span> <span style=color:#c1abea>char</span> <span style=color:#c7bf54>!=</span> <span style=color:#98c379>&#39; &#39;</span>:
+</span></span><span style=display:flex><span>                    <span style=color:#c1abea>self</span><span style=color:#c7bf54>.</span><span style=color:#c1abea>grid</span><span style=color:#c7bf54>.</span><span style=color:#c1abea>setdefault</span>(<span style=color:#c1abea>row</span>, {})[<span style=color:#c1abea>col</span>] <span style=color:#c7bf54>=</span> <span style=color:#c1abea>char</span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>    <span style=color:#8a93a5;font-style:italic># for bounds, we assume only the original grid matters</span>
+</span></span><span style=display:flex><span>    <span style=color:#8a93a5;font-style:italic># THIS IS IMPT IF YOU OVERWRITE AN AREA NEAR THE EDGE</span>
+</span></span><span style=display:flex><span>    <span style=color:#c678dd>def</span> <span style=color:#00b1f7>get_row_bound</span>(<span style=color:#c1abea>self</span>):
+</span></span><span style=display:flex><span>        <span style=color:#c678dd>return</span> <span style=color:#c1abea>self</span><span style=color:#c7bf54>.</span><span style=color:#c1abea>row_bound</span>
+</span></span><span style=display:flex><span>    
+</span></span><span style=display:flex><span>    <span style=color:#c678dd>def</span> <span style=color:#00b1f7>get_col_bound</span>(<span style=color:#c1abea>self</span>):
+</span></span><span style=display:flex><span>        <span style=color:#c678dd>return</span> <span style=color:#c1abea>self</span><span style=color:#c7bf54>.</span><span style=color:#c1abea>col_bound</span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#8a93a5;font-style:italic># GLOBAL VARIABLES</span>
+</span></span><span style=display:flex><span><span style=color:#c1abea>grid</span> <span style=color:#c7bf54>=</span> <span style=color:#c1abea>BefungeGrid</span>() <span style=color:#8a93a5;font-style:italic># BEFUNGE GRID </span>
+</span></span><span style=display:flex><span><span style=color:#c1abea>x</span> <span style=color:#c7bf54>=</span> <span style=color:#d19a66>0</span>                <span style=color:#8a93a5;font-style:italic># X COORDINATE OF POINTER</span>
+</span></span><span style=display:flex><span><span style=color:#c1abea>y</span> <span style=color:#c7bf54>=</span> <span style=color:#d19a66>0</span>                <span style=color:#8a93a5;font-style:italic># Y COORDINATE OF POINTER</span>
+</span></span><span style=display:flex><span><span style=color:#c1abea>direction</span> <span style=color:#c7bf54>=</span> <span style=color:#d19a66>0</span>        <span style=color:#8a93a5;font-style:italic># CURRENT DIRECTION OF MOTION</span>
+</span></span><span style=display:flex><span><span style=color:#c1abea>stack</span> <span style=color:#c7bf54>=</span> []           <span style=color:#8a93a5;font-style:italic># STACK OF POINTER</span>
+</span></span><span style=display:flex><span><span style=color:#c1abea>inQuotes</span> <span style=color:#c7bf54>=</span> <span style=color:#b756ff;font-weight:700>False</span>     <span style=color:#8a93a5;font-style:italic># WHETHER WE&#39;RE IN STRING MODE</span>
+</span></span><span style=display:flex><span><span style=color:#c1abea>globalPC</span> <span style=color:#c7bf54>=</span> <span style=color:#d19a66>0</span>         <span style=color:#8a93a5;font-style:italic># GLOBAL PROGRAM COUNTER</span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#c678dd>def</span> <span style=color:#00b1f7>main</span>():
+</span></span><span style=display:flex><span>    <span style=color:#c678dd>global</span> <span style=color:#c1abea>globalPC</span>
+</span></span><span style=display:flex><span>    <span style=color:#c678dd>if</span> <span style=color:#ef8383>len</span>(<span style=color:#c1abea>sys</span><span style=color:#c7bf54>.</span><span style=color:#c1abea>argv</span>) <span style=color:#c7bf54>&lt;</span> <span style=color:#d19a66>2</span>:
+</span></span><span style=display:flex><span>        <span style=color:#ef8383>print</span>(<span style=color:#63c381>&#34;ERROR: No input file specified!&#34;</span>)
+</span></span><span style=display:flex><span>        <span style=color:#c1abea>sys</span><span style=color:#c7bf54>.</span><span style=color:#c1abea>exit</span>()
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>    <span style=color:#c1abea>filename</span> <span style=color:#c7bf54>=</span> <span style=color:#c1abea>sys</span><span style=color:#c7bf54>.</span><span style=color:#c1abea>argv</span>[<span style=color:#d19a66>1</span>]
+</span></span><span style=display:flex><span>    <span style=color:#c678dd>if</span> <span style=color:#b756ff;font-weight:700>not</span> <span style=color:#c1abea>os</span><span style=color:#c7bf54>.</span><span style=color:#c1abea>path</span><span style=color:#c7bf54>.</span><span style=color:#c1abea>isfile</span>(<span style=color:#c1abea>filename</span>):
+</span></span><span style=display:flex><span>        <span style=color:#ef8383>print</span>(<span style=color:#63c381>&#34;ERROR: Specified input file does not exist!&#34;</span>)
+</span></span><span style=display:flex><span>        <span style=color:#c1abea>sys</span><span style=color:#c7bf54>.</span><span style=color:#c1abea>exit</span>()
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>    <span style=color:#c1abea>grid</span><span style=color:#c7bf54>.</span><span style=color:#c1abea>read_file</span>(<span style=color:#c1abea>filename</span>)
+</span></span><span style=display:flex><span>    <span style=color:#8a93a5;font-style:italic># printGrid(grid)</span>
+</span></span><span style=display:flex><span>    
+</span></span><span style=display:flex><span>    <span style=color:#c678dd>while</span> <span style=color:#c1abea>grid</span>[<span style=color:#c1abea>y</span>, <span style=color:#c1abea>x</span>] <span style=color:#c7bf54>!=</span> <span style=color:#63c381>&#34;@&#34;</span>:
+</span></span><span style=display:flex><span>        <span style=color:#c1abea>globalPC</span> <span style=color:#c7bf54>+=</span> <span style=color:#d19a66>1</span>
+</span></span><span style=display:flex><span>        <span style=color:#c1abea>step</span>()
+</span></span><span style=display:flex><span>    
+</span></span><span style=display:flex><span><span style=color:#c678dd>def</span> <span style=color:#00b1f7>printGrid</span>(<span style=color:#c1abea>grid</span>: <span style=color:#c1abea>BefungeGrid</span>, <span style=color:#c1abea>MAX_X</span><span style=color:#c7bf54>=</span><span style=color:#d19a66>100</span>, <span style=color:#c1abea>MAX_Y</span><span style=color:#c7bf54>=</span><span style=color:#d19a66>100</span>):
+</span></span><span style=display:flex><span>    <span style=color:#63c381>&#34;&#34;&#34;Print the grid to the console&#34;&#34;&#34;</span>
+</span></span><span style=display:flex><span>    <span style=color:#c678dd>for</span> <span style=color:#c1abea>row</span> <span style=color:#b756ff;font-weight:700>in</span> <span style=color:#ef8383>range</span>(<span style=color:#c1abea>MAX_Y</span>):
+</span></span><span style=display:flex><span>        <span style=color:#c678dd>for</span> <span style=color:#c1abea>col</span> <span style=color:#b756ff;font-weight:700>in</span> <span style=color:#ef8383>range</span>(<span style=color:#c1abea>grid</span><span style=color:#c7bf54>.</span><span style=color:#c1abea>get_row_bound</span>()):
+</span></span><span style=display:flex><span>            <span style=color:#ef8383>print</span>(<span style=color:#c1abea>grid</span>[<span style=color:#c1abea>row</span>, <span style=color:#c1abea>col</span>], <span style=color:#c1abea>end</span><span style=color:#c7bf54>=</span><span style=color:#63c381>&#34;&#34;</span>)
+</span></span><span style=display:flex><span>        <span style=color:#ef8383>print</span>()
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#c678dd>def</span> <span style=color:#00b1f7>step</span>():
+</span></span><span style=display:flex><span>    <span style=color:#8a93a5;font-style:italic># print(f&#34;{globalPC} ({y}, {x}) {grid[y, x]}&#34;)</span>
+</span></span><span style=display:flex><span>    <span style=color:#c1abea>processInstruction</span>(<span style=color:#c1abea>grid</span>[<span style=color:#c1abea>y</span>, <span style=color:#c1abea>x</span>])
+</span></span><span style=display:flex><span>    <span style=color:#c1abea>move</span>()
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#c678dd>def</span> <span style=color:#00b1f7>processInstruction</span>(<span style=color:#c1abea>inst</span>: <span style=color:#ef8383>str</span>):
+</span></span><span style=display:flex><span>    <span style=color:#c678dd>global</span> <span style=color:#c1abea>direction</span>, <span style=color:#c1abea>inQuotes</span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>    <span style=color:#8a93a5;font-style:italic># IN STRING MODE</span>
+</span></span><span style=display:flex><span>    <span style=color:#c678dd>if</span> <span style=color:#c1abea>inQuotes</span> <span style=color:#b756ff;font-weight:700>and</span> <span style=color:#c1abea>inst</span> <span style=color:#c7bf54>!=</span> <span style=color:#98c379>&#39;&#34;&#39;</span>:
+</span></span><span style=display:flex><span>        <span style=color:#c1abea>stack</span><span style=color:#c7bf54>.</span><span style=color:#c1abea>append</span>(<span style=color:#ef8383>ord</span>(<span style=color:#c1abea>inst</span>))
+</span></span><span style=display:flex><span>        <span style=color:#c678dd>return</span>
+</span></span><span style=display:flex><span>    
+</span></span><span style=display:flex><span>    <span style=color:#8a93a5;font-style:italic># NOP</span>
+</span></span><span style=display:flex><span>    <span style=color:#c678dd>if</span> <span style=color:#c1abea>inst</span> <span style=color:#c7bf54>==</span> <span style=color:#63c381>&#34; &#34;</span>:
+</span></span><span style=display:flex><span>        <span style=color:#c678dd>return</span>
+</span></span><span style=display:flex><span>    
+</span></span><span style=display:flex><span>    <span style=color:#8a93a5;font-style:italic># TOGGLE STRING MODE</span>
+</span></span><span style=display:flex><span>    <span style=color:#c678dd>elif</span> <span style=color:#c1abea>inst</span> <span style=color:#c7bf54>==</span> <span style=color:#98c379>&#39;&#34;&#39;</span>:
+</span></span><span style=display:flex><span>        <span style=color:#c1abea>inQuotes</span> <span style=color:#c7bf54>=</span> <span style=color:#b756ff;font-weight:700>not</span> <span style=color:#c1abea>inQuotes</span>
+</span></span><span style=display:flex><span>    
+</span></span><span style=display:flex><span>    <span style=color:#8a93a5;font-style:italic># MOVEMENT</span>
+</span></span><span style=display:flex><span>    <span style=color:#c678dd>elif</span> <span style=color:#c1abea>inst</span> <span style=color:#b756ff;font-weight:700>in</span> <span style=color:#98c379>&#39;&gt;v&lt;^&#39;</span>:
+</span></span><span style=display:flex><span>        <span style=color:#c1abea>direction</span> <span style=color:#c7bf54>=</span> <span style=color:#98c379>&#39;&gt;v&lt;^&#39;</span><span style=color:#c7bf54>.</span><span style=color:#c1abea>index</span>(<span style=color:#c1abea>inst</span>)
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>    <span style=color:#c678dd>elif</span> <span style=color:#c1abea>inst</span> <span style=color:#c7bf54>==</span> <span style=color:#98c379>&#39;#&#39;</span>: <span style=color:#8a93a5;font-style:italic># skip</span>
+</span></span><span style=display:flex><span>        <span style=color:#c1abea>move</span>()
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>    <span style=color:#8a93a5;font-style:italic># LITERAL</span>
+</span></span><span style=display:flex><span>    <span style=color:#c678dd>elif</span> <span style=color:#c1abea>inst</span><span style=color:#c7bf54>.</span><span style=color:#c1abea>isdigit</span>():
+</span></span><span style=display:flex><span>        <span style=color:#c1abea>stack</span><span style=color:#c7bf54>.</span><span style=color:#c1abea>append</span>(<span style=color:#ef8383>int</span>(<span style=color:#c1abea>inst</span>))
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>    <span style=color:#8a93a5;font-style:italic># ARITHMETIC</span>
+</span></span><span style=display:flex><span>    <span style=color:#c678dd>elif</span> <span style=color:#c1abea>inst</span> <span style=color:#b756ff;font-weight:700>in</span> <span style=color:#98c379>&#39;+-*%&#39;</span>:
+</span></span><span style=display:flex><span>        <span style=color:#c1abea>a</span>, <span style=color:#c1abea>b</span> <span style=color:#c7bf54>=</span> <span style=color:#c1abea>stack</span><span style=color:#c7bf54>.</span><span style=color:#c1abea>pop</span>(), <span style=color:#c1abea>stack</span><span style=color:#c7bf54>.</span><span style=color:#c1abea>pop</span>()
+</span></span><span style=display:flex><span>        <span style=color:#c1abea>stack</span><span style=color:#c7bf54>.</span><span style=color:#c1abea>append</span>(<span style=color:#ef8383>eval</span>(<span style=color:#98c379>f</span><span style=color:#98c379>&#39;</span><span style=color:#98c379>{</span><span style=color:#c1abea>b</span><span style=color:#98c379>}{</span><span style=color:#c1abea>inst</span><span style=color:#98c379>}{</span><span style=color:#c1abea>a</span><span style=color:#98c379>}</span><span style=color:#98c379>&#39;</span>))
+</span></span><span style=display:flex><span>    <span style=color:#c678dd>elif</span> <span style=color:#c1abea>inst</span> <span style=color:#c7bf54>==</span> <span style=color:#98c379>&#39;/&#39;</span>: <span style=color:#8a93a5;font-style:italic># special case</span>
+</span></span><span style=display:flex><span>        <span style=color:#c1abea>a</span>, <span style=color:#c1abea>b</span> <span style=color:#c7bf54>=</span> <span style=color:#c1abea>stack</span><span style=color:#c7bf54>.</span><span style=color:#c1abea>pop</span>(), <span style=color:#c1abea>stack</span><span style=color:#c7bf54>.</span><span style=color:#c1abea>pop</span>()
+</span></span><span style=display:flex><span>        <span style=color:#c1abea>stack</span><span style=color:#c7bf54>.</span><span style=color:#c1abea>append</span>(<span style=color:#c1abea>b</span> <span style=color:#c7bf54>//</span> <span style=color:#c1abea>a</span>)
+</span></span><span style=display:flex><span>    
+</span></span><span style=display:flex><span>    <span style=color:#8a93a5;font-style:italic># BOOLEAN</span>
+</span></span><span style=display:flex><span>    <span style=color:#c678dd>elif</span> <span style=color:#c1abea>inst</span> <span style=color:#c7bf54>==</span> <span style=color:#98c379>&#39;!&#39;</span>: <span style=color:#8a93a5;font-style:italic># logical not</span>
+</span></span><span style=display:flex><span>        <span style=color:#c1abea>stack</span><span style=color:#c7bf54>.</span><span style=color:#c1abea>append</span>(<span style=color:#b756ff;font-weight:700>not</span> <span style=color:#c1abea>stack</span><span style=color:#c7bf54>.</span><span style=color:#c1abea>pop</span>())
+</span></span><span style=display:flex><span>    
+</span></span><span style=display:flex><span>    <span style=color:#c678dd>elif</span> <span style=color:#c1abea>inst</span> <span style=color:#c7bf54>==</span> <span style=color:#98c379>&#39;`&#39;</span>: <span style=color:#8a93a5;font-style:italic># greater than</span>
+</span></span><span style=display:flex><span>        <span style=color:#c1abea>a</span>, <span style=color:#c1abea>b</span> <span style=color:#c7bf54>=</span> <span style=color:#c1abea>stack</span><span style=color:#c7bf54>.</span><span style=color:#c1abea>pop</span>(), <span style=color:#c1abea>stack</span><span style=color:#c7bf54>.</span><span style=color:#c1abea>pop</span>()
+</span></span><span style=display:flex><span>        <span style=color:#c1abea>stack</span><span style=color:#c7bf54>.</span><span style=color:#c1abea>append</span>(<span style=color:#ef8383>int</span>(<span style=color:#c1abea>b</span> <span style=color:#c7bf54>&gt;</span> <span style=color:#c1abea>a</span>))
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>    <span style=color:#8a93a5;font-style:italic># RANDOM</span>
+</span></span><span style=display:flex><span>    <span style=color:#c678dd>elif</span> <span style=color:#c1abea>inst</span> <span style=color:#c7bf54>==</span> <span style=color:#98c379>&#39;?&#39;</span>: <span style=color:#8a93a5;font-style:italic># random direction</span>
+</span></span><span style=display:flex><span>        <span style=color:#c1abea>direction</span> <span style=color:#c7bf54>=</span> <span style=color:#c1abea>randint</span>(<span style=color:#d19a66>0</span>, <span style=color:#d19a66>3</span>)
+</span></span><span style=display:flex><span>    
+</span></span><span style=display:flex><span>    <span style=color:#8a93a5;font-style:italic># CONDITIONALS</span>
+</span></span><span style=display:flex><span>    <span style=color:#c678dd>elif</span> <span style=color:#c1abea>inst</span> <span style=color:#c7bf54>==</span> <span style=color:#98c379>&#39;_&#39;</span>: <span style=color:#8a93a5;font-style:italic># horizontal if</span>
+</span></span><span style=display:flex><span>        <span style=color:#c678dd>if</span> <span style=color:#b756ff;font-weight:700>not</span> <span style=color:#c1abea>stack</span><span style=color:#c7bf54>.</span><span style=color:#c1abea>pop</span>():
+</span></span><span style=display:flex><span>            <span style=color:#c1abea>direction</span> <span style=color:#c7bf54>=</span> <span style=color:#d19a66>0</span>
+</span></span><span style=display:flex><span>        <span style=color:#c678dd>else</span>:
+</span></span><span style=display:flex><span>            <span style=color:#c1abea>direction</span> <span style=color:#c7bf54>=</span> <span style=color:#d19a66>2</span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>    <span style=color:#c678dd>elif</span> <span style=color:#c1abea>inst</span> <span style=color:#c7bf54>==</span> <span style=color:#98c379>&#39;|&#39;</span>:
+</span></span><span style=display:flex><span>        <span style=color:#c678dd>if</span> <span style=color:#b756ff;font-weight:700>not</span> <span style=color:#c1abea>stack</span><span style=color:#c7bf54>.</span><span style=color:#c1abea>pop</span>():
+</span></span><span style=display:flex><span>            <span style=color:#c1abea>direction</span> <span style=color:#c7bf54>=</span> <span style=color:#d19a66>1</span>
+</span></span><span style=display:flex><span>        <span style=color:#c678dd>else</span>:
+</span></span><span style=display:flex><span>            <span style=color:#c1abea>direction</span> <span style=color:#c7bf54>=</span> <span style=color:#d19a66>3</span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>    <span style=color:#8a93a5;font-style:italic># STACK OPS</span>
+</span></span><span style=display:flex><span>    <span style=color:#c678dd>elif</span> <span style=color:#c1abea>inst</span> <span style=color:#c7bf54>==</span> <span style=color:#98c379>&#39;:&#39;</span>: <span style=color:#8a93a5;font-style:italic># dup</span>
+</span></span><span style=display:flex><span>        <span style=color:#c1abea>stack</span><span style=color:#c7bf54>.</span><span style=color:#c1abea>append</span>(<span style=color:#c1abea>stack</span>[<span style=color:#c7bf54>-</span><span style=color:#d19a66>1</span>])
+</span></span><span style=display:flex><span>    
+</span></span><span style=display:flex><span>    <span style=color:#c678dd>elif</span> <span style=color:#c1abea>inst</span> <span style=color:#c7bf54>==</span> <span style=color:#98c379>&#39;</span><span style=color:#d26464;font-weight:700>\\</span><span style=color:#98c379>&#39;</span>: <span style=color:#8a93a5;font-style:italic># swap</span>
+</span></span><span style=display:flex><span>        <span style=color:#c1abea>a</span>, <span style=color:#c1abea>b</span> <span style=color:#c7bf54>=</span> <span style=color:#c1abea>stack</span><span style=color:#c7bf54>.</span><span style=color:#c1abea>pop</span>(), <span style=color:#c1abea>stack</span><span style=color:#c7bf54>.</span><span style=color:#c1abea>pop</span>()
+</span></span><span style=display:flex><span>        <span style=color:#c1abea>stack</span><span style=color:#c7bf54>.</span><span style=color:#c1abea>append</span>(<span style=color:#c1abea>a</span>)
+</span></span><span style=display:flex><span>        <span style=color:#c1abea>stack</span><span style=color:#c7bf54>.</span><span style=color:#c1abea>append</span>(<span style=color:#c1abea>b</span>)
+</span></span><span style=display:flex><span>    
+</span></span><span style=display:flex><span>    <span style=color:#c678dd>elif</span> <span style=color:#c1abea>inst</span> <span style=color:#c7bf54>==</span> <span style=color:#98c379>&#39;$&#39;</span>: <span style=color:#8a93a5;font-style:italic># pop</span>
+</span></span><span style=display:flex><span>        <span style=color:#c1abea>stack</span><span style=color:#c7bf54>.</span><span style=color:#c1abea>pop</span>()
+</span></span><span style=display:flex><span>    
+</span></span><span style=display:flex><span>    <span style=color:#8a93a5;font-style:italic># OUTPUT</span>
+</span></span><span style=display:flex><span>    <span style=color:#c678dd>elif</span> <span style=color:#c1abea>inst</span> <span style=color:#c7bf54>==</span> <span style=color:#98c379>&#39;.&#39;</span>: <span style=color:#8a93a5;font-style:italic># output int</span>
+</span></span><span style=display:flex><span>        <span style=color:#ef8383>print</span>(<span style=color:#c1abea>stack</span><span style=color:#c7bf54>.</span><span style=color:#c1abea>pop</span>(), <span style=color:#c1abea>end</span><span style=color:#c7bf54>=</span><span style=color:#63c381>&#34; &#34;</span>)
+</span></span><span style=display:flex><span>    
+</span></span><span style=display:flex><span>    <span style=color:#c678dd>elif</span> <span style=color:#c1abea>inst</span> <span style=color:#c7bf54>==</span> <span style=color:#98c379>&#39;,&#39;</span>: <span style=color:#8a93a5;font-style:italic># output char</span>
+</span></span><span style=display:flex><span>        <span style=color:#ef8383>print</span>(<span style=color:#ef8383>chr</span>(<span style=color:#c1abea>stack</span><span style=color:#c7bf54>.</span><span style=color:#c1abea>pop</span>()), <span style=color:#c1abea>end</span><span style=color:#c7bf54>=</span><span style=color:#63c381>&#34;&#34;</span>)
+</span></span><span style=display:flex><span>    
+</span></span><span style=display:flex><span>    <span style=color:#8a93a5;font-style:italic># MODIFY</span>
+</span></span><span style=display:flex><span>    <span style=color:#8a93a5;font-style:italic># THESE HAVE SPECIAL BEHAVIOR WHEN DATA IS NOT ASCII</span>
+</span></span><span style=display:flex><span>    <span style=color:#c678dd>elif</span> <span style=color:#c1abea>inst</span> <span style=color:#c7bf54>==</span> <span style=color:#98c379>&#39;p&#39;</span>: <span style=color:#8a93a5;font-style:italic># put</span>
+</span></span><span style=display:flex><span>        <span style=color:#c1abea>y</span>, <span style=color:#c1abea>x</span>, <span style=color:#c1abea>v</span> <span style=color:#c7bf54>=</span> <span style=color:#c1abea>stack</span><span style=color:#c7bf54>.</span><span style=color:#c1abea>pop</span>(), <span style=color:#c1abea>stack</span><span style=color:#c7bf54>.</span><span style=color:#c1abea>pop</span>(), <span style=color:#c1abea>stack</span><span style=color:#c7bf54>.</span><span style=color:#c1abea>pop</span>()
+</span></span><span style=display:flex><span>        <span style=color:#c678dd>if</span> <span style=color:#d19a66>32</span> <span style=color:#c7bf54>&lt;=</span> <span style=color:#c1abea>v</span> <span style=color:#c7bf54>&lt;=</span> <span style=color:#d19a66>126</span>:
+</span></span><span style=display:flex><span>            <span style=color:#c1abea>grid</span>[<span style=color:#c1abea>y</span>, <span style=color:#c1abea>x</span>] <span style=color:#c7bf54>=</span> <span style=color:#ef8383>chr</span>(<span style=color:#c1abea>v</span>)
+</span></span><span style=display:flex><span>        <span style=color:#c678dd>else</span>:
+</span></span><span style=display:flex><span>            <span style=color:#c1abea>grid</span>[<span style=color:#c1abea>y</span>, <span style=color:#c1abea>x</span>] <span style=color:#c7bf54>=</span> <span style=color:#c1abea>v</span>
+</span></span><span style=display:flex><span>    
+</span></span><span style=display:flex><span>    <span style=color:#c678dd>elif</span> <span style=color:#c1abea>inst</span> <span style=color:#c7bf54>==</span> <span style=color:#98c379>&#39;g&#39;</span>: <span style=color:#8a93a5;font-style:italic># get</span>
+</span></span><span style=display:flex><span>        <span style=color:#c1abea>y</span>, <span style=color:#c1abea>x</span> <span style=color:#c7bf54>=</span> <span style=color:#c1abea>stack</span><span style=color:#c7bf54>.</span><span style=color:#c1abea>pop</span>(), <span style=color:#c1abea>stack</span><span style=color:#c7bf54>.</span><span style=color:#c1abea>pop</span>()
+</span></span><span style=display:flex><span>        <span style=color:#c1abea>v</span> <span style=color:#c7bf54>=</span> <span style=color:#c1abea>grid</span>[<span style=color:#c1abea>y</span>, <span style=color:#c1abea>x</span>]
+</span></span><span style=display:flex><span>        <span style=color:#c678dd>if</span> <span style=color:#ef8383>type</span>(<span style=color:#c1abea>v</span>) <span style=color:#c7bf54>==</span> <span style=color:#ef8383>str</span>:
+</span></span><span style=display:flex><span>            <span style=color:#c1abea>stack</span><span style=color:#c7bf54>.</span><span style=color:#c1abea>append</span>(<span style=color:#ef8383>ord</span>(<span style=color:#c1abea>v</span>))
+</span></span><span style=display:flex><span>        <span style=color:#c678dd>else</span>:
+</span></span><span style=display:flex><span>            <span style=color:#c1abea>stack</span><span style=color:#c7bf54>.</span><span style=color:#c1abea>append</span>(<span style=color:#c1abea>v</span>)
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>    <span style=color:#8a93a5;font-style:italic># INPUT</span>
+</span></span><span style=display:flex><span>    <span style=color:#c678dd>elif</span> <span style=color:#c1abea>inst</span> <span style=color:#c7bf54>==</span> <span style=color:#98c379>&#39;&amp;&#39;</span>: <span style=color:#8a93a5;font-style:italic># input int</span>
+</span></span><span style=display:flex><span>        <span style=color:#c1abea>stack</span><span style=color:#c7bf54>.</span><span style=color:#c1abea>append</span>(<span style=color:#ef8383>int</span>(<span style=color:#ef8383>input</span>(<span style=color:#63c381>&#34;(n) &gt; &#34;</span>)))
+</span></span><span style=display:flex><span>    
+</span></span><span style=display:flex><span>    <span style=color:#c678dd>elif</span> <span style=color:#c1abea>inst</span> <span style=color:#c7bf54>==</span> <span style=color:#98c379>&#39;~&#39;</span>: <span style=color:#8a93a5;font-style:italic># input char</span>
+</span></span><span style=display:flex><span>        <span style=color:#c1abea>stack</span><span style=color:#c7bf54>.</span><span style=color:#c1abea>append</span>(<span style=color:#ef8383>ord</span>(<span style=color:#ef8383>input</span>(<span style=color:#63c381>&#34;(c) &gt; &#34;</span>)))
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#c678dd>def</span> <span style=color:#00b1f7>move</span>():
+</span></span><span style=display:flex><span>    <span style=color:#c678dd>global</span> <span style=color:#c1abea>x</span>, <span style=color:#c1abea>y</span>
+</span></span><span style=display:flex><span>    <span style=color:#8a93a5;font-style:italic># right, down, left, up</span>
+</span></span><span style=display:flex><span>    <span style=color:#c1abea>dxy</span> <span style=color:#c7bf54>=</span> [(<span style=color:#d19a66>0</span>, <span style=color:#d19a66>1</span>), (<span style=color:#d19a66>1</span>, <span style=color:#d19a66>0</span>), (<span style=color:#d19a66>0</span>, <span style=color:#c7bf54>-</span><span style=color:#d19a66>1</span>), (<span style=color:#c7bf54>-</span><span style=color:#d19a66>1</span>, <span style=color:#d19a66>0</span>)]
+</span></span><span style=display:flex><span>    <span style=color:#c1abea>dy</span>, <span style=color:#c1abea>dx</span> <span style=color:#c7bf54>=</span> <span style=color:#c1abea>dxy</span>[<span style=color:#c1abea>direction</span>]
+</span></span><span style=display:flex><span>    <span style=color:#c1abea>x</span> <span style=color:#c7bf54>+=</span> <span style=color:#c1abea>dx</span>
+</span></span><span style=display:flex><span>    <span style=color:#c1abea>y</span> <span style=color:#c7bf54>+=</span> <span style=color:#c1abea>dy</span>
+</span></span><span style=display:flex><span>    
+</span></span><span style=display:flex><span>    <span style=color:#8a93a5;font-style:italic># WRAP AROUND IF NECESSARY</span>
+</span></span><span style=display:flex><span>    <span style=color:#c1abea>x</span> <span style=color:#c7bf54>%=</span> <span style=color:#c1abea>grid</span><span style=color:#c7bf54>.</span><span style=color:#c1abea>get_row_bound</span>() 
+</span></span><span style=display:flex><span>    <span style=color:#c1abea>y</span> <span style=color:#c7bf54>%=</span> <span style=color:#c1abea>grid</span><span style=color:#c7bf54>.</span><span style=color:#c1abea>get_col_bound</span>()
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>    
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#c678dd>if</span> <span style=color:#c1abea>__name__</span> <span style=color:#c7bf54>==</span> <span style=color:#63c381>&#34;__main__&#34;</span>:
+</span></span><span style=display:flex><span>    <span style=color:#c1abea>main</span>()
+</span></span></code></pre></td></tr></table></div></div><p>And of course, I can&rsquo;t end the teaser without a challenge. Here&rsquo;s a small Befunge program that I wrote, can you figure out what it does?</p><p>filename=challenge.bef</p><div class=highlight><div style=color:#b0c4de;background-color:#282c34;-moz-tab-size:4;-o-tab-size:4;tab-size:4><table style=border-spacing:0;padding:0;margin:0;border:0><tr><td style=vertical-align:top;padding:0;margin:0;border:0><pre tabindex=0 style=color:#b0c4de;background-color:#282c34;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#58626f"> 1
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#58626f"> 2
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#58626f"> 3
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#58626f"> 4
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#58626f"> 5
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#58626f"> 6
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#58626f"> 7
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#58626f"> 8
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#58626f"> 9
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#58626f">10
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#58626f">11
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#58626f">12
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#58626f">13
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#58626f">14
+</span></code></pre></td><td style=vertical-align:top;padding:0;margin:0;border:0;width:100%><pre tabindex=0 style=color:#b0c4de;background-color:#282c34;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-text data-lang=text><span style=display:flex><span>      &gt;92+2*1+3*99*99*v
+</span></span><span style=display:flex><span>v  *99               p&lt;
+</span></span><span style=display:flex><span>&amp;                      
+</span></span><span style=display:flex><span>\                      
+</span></span><span style=display:flex><span>     &gt;:00p -,  v       
+</span></span><span style=display:flex><span>     \                 
+</span></span><span style=display:flex><span>  &gt;\:|:\ +1 g00&lt;       
+</span></span><span style=display:flex><span>  -  @                 
+</span></span><span style=display:flex><span>  3                    
+</span></span><span style=display:flex><span>  0                    
+</span></span><span style=display:flex><span>  ^&#34;Vmt ekg$nz(&#34;0&lt;     
+</span></span><span style=display:flex><span>                 |    &lt;
+</span></span><span style=display:flex><span>          @,,&#34;NO&#34;&lt;     
+</span></span><span style=display:flex><span>&gt;99*g 55+::**67**+  -!^
+</span></span></code></pre></td></tr></table></div></div><p>That&rsquo;s all for now, see you soon!</p></div></div></main></div><script>function handle_open(e){let t=e.target;e.target.tagName==="SUMMARY"&&(t=e.target.querySelector(".code-summary-inner")),t.classList.toggle("open"),t.classList.contains("open")?t.textContent="Click to collapse "+t.textContent.split(" ").slice(3).join(" "):t.textContent="Click to expand "+t.textContent.split(" ").slice(3).join(" ")}let code_divs=document.querySelectorAll("div.highlight"),to_remove=[];for(let e of code_divs){let t="",n=e.previousElementSibling;n.tagName=="P"&&(n=n.textContent,n.startsWith("filename")&&(t=n.split("=")[1].trim(),to_remove.push(e.previousElementSibling)));let s=e.querySelector("pre code"),o=s.textContent.split(`
+`).length;if(t!==""||o>10){let n=document.createElement("details"),o=document.createElement("summary"),i=document.createElement("span");i.textContent="Click to expand",t!==""&&(i.textContent+=" "+t,n.setAttribute("id",t)),i.classList.add("code-summary-inner"),o.appendChild(i),o.addEventListener("click",handle_open),o.classList.add("code-summary"),s.classList.add("code-inner"),e.parentNode.insertBefore(n,e),n.appendChild(o),n.appendChild(e),n.classList.add("code-wrapper")}}for(let e of to_remove)e.remove();let anchors=document.querySelectorAll(".postWrapper a");for(let e of anchors)e.host!==window.location.host&&(e.setAttribute("target","_blank"),e.setAttribute("rel","noopener noreferrer"));let headers=document.querySelectorAll(".postWrapper div h1, .postWrapper div h2, .postWrapper div h3, .postWrapper div h4, .postWrappe div h5, .postWrapper div h6");for(let t of headers){let n=t.getAttribute("id"),e=document.createElement("a");e.setAttribute("href","#"+n),e.classList.add("header-link"),e.textContent="#",t.append(e)}</script><footer class=footer>© 2023 flocto, Built with
+<a href=https://gohugo.io class=footerLink>Hugo</a> and (an edited)
+<a href=https://github.com/LordMathis/hugo-theme-nightfall class=footerLink>Nightfall</a> theme</footer></div></body></html>
