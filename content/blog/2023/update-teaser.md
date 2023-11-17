@@ -73,30 +73,47 @@ class BefungeGrid:
     def get_col_bound(self):
         return self.col_bound
 
+class Stack:
+    def __init__(self):
+        self.stack = []
+
+    def pop(self, value=None):
+        if value:
+            return self.stack.pop(value) if self.stack else 0
+        else:
+            return self.stack.pop() if self.stack else 0
+
+    def append(self, value):
+        self.stack.append(value)
+
+    def __getitem__(self, key):
+        if not self.stack: # empty stack
+            return 0
+        return self.stack[key]
+
 # GLOBAL VARIABLES
 grid = BefungeGrid() # BEFUNGE GRID 
 x = 0                # X COORDINATE OF POINTER
 y = 0                # Y COORDINATE OF POINTER
 direction = 0        # CURRENT DIRECTION OF MOTION
-stack = []           # STACK OF POINTER
+stack = Stack()      # STACK OF POINTER
 inQuotes = False     # WHETHER WE'RE IN STRING MODE
 globalPC = 0         # GLOBAL PROGRAM COUNTER
 
-def main():
-    global globalPC
-    if len(sys.argv) < 2:
-        print("ERROR: No input file specified!")
-        sys.exit()
-
-    filename = sys.argv[1]
-    if not os.path.isfile(filename):
-        print("ERROR: Specified input file does not exist!")
-        sys.exit()
-
+def befunge_main(filename):
+    global grid, x, y, direction, stack, inQuotes
+    global globalPC, runFail, flag_i
+    grid = BefungeGrid()        # BEFUNGE GRID 
+    x, y = 0, 0                 # POINTER
+    direction = 0               # CURRENT DIRECTION OF MOTION
+    stack = Stack()             # LIFO NUMBER STORAGE
+    inQuotes = False            # WHETHER WE'RE IN STRING MODE
+    globalPC = 0                # GLOBAL PROGRAM COUNTER
+    
     grid.read_file(filename)
     # printGrid(grid)
     
-    while grid[y, x] != "@":
+    while grid[y, x] != "@" and not runFail:    
         globalPC += 1
         step()
     
@@ -228,7 +245,18 @@ def move():
     x %= grid.get_row_bound() 
     y %= grid.get_col_bound()
 
-    
+def main():
+    global globalPC
+    if len(sys.argv) < 2:
+        print("ERROR: No input file specified!")
+        sys.exit()
+
+    filename = sys.argv[1]
+    if not os.path.isfile(filename):
+        print("ERROR: Specified input file does not exist!")
+        sys.exit()
+
+    befunge_main(filename)
 
 if __name__ == "__main__":
     main()
